@@ -1,24 +1,21 @@
-package main
+package integration
 
 import (
-	"log"
-	"os"
-	"os/signal"
-	"syscall"
+	"testing"
+	"time"
 
 	"github.com/savvyinsight/agrisenseiot/internal/config"
-	"github.com/savvyinsight/agrisenseiot/internal/mqtt"
 	"github.com/savvyinsight/agrisenseiot/internal/repository/influxdb"
 	"github.com/savvyinsight/agrisenseiot/internal/repository/postgres"
 	"github.com/savvyinsight/agrisenseiot/internal/repository/redis"
 	"github.com/savvyinsight/agrisenseiot/internal/service/data"
 )
 
-func main() {
+func TestDataPipeline(t *testing.T) {
 	// Load config
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		t.Fatalf("Failed to load config: %v", err)
 	}
 
 	// Setup PostgreSQL connection
@@ -32,7 +29,7 @@ func main() {
 	}
 	pgDB, err := postgres.NewConnection(pgConfig)
 	if err != nil {
-		log.Fatalf("Failed to connect to PostgreSQL: %v", err)
+		t.Fatalf("Failed to connect to PostgreSQL: %v", err)
 	}
 	defer pgDB.Close()
 
@@ -45,7 +42,7 @@ func main() {
 	}
 	redisClient, err := redis.NewConnection(redisConfig)
 	if err != nil {
-		log.Fatalf("Failed to connect to Redis: %v", err)
+		t.Fatalf("Failed to connect to Redis: %v", err)
 	}
 	defer redisClient.Close()
 
@@ -58,7 +55,7 @@ func main() {
 	}
 	influxRepo, err := influxdb.NewRepository(influxConfig)
 	if err != nil {
-		log.Fatalf("Failed to connect to InfluxDB: %v", err)
+		t.Fatalf("Failed to connect to InfluxDB: %v", err)
 	}
 	defer influxRepo.Close()
 
@@ -67,40 +64,37 @@ func main() {
 	sensorTypeRepo := &postgres.SensorTypeRepository{DB: pgDB}
 	cacheRepo := redis.NewCacheRepository(redisClient)
 
-	// Create data service
+	// Create data service with correct repositories
 	dataService := data.NewService(
-		sensorTypeRepo,
-		deviceRepo,
-		cacheRepo,
-		influxRepo,
+		sensorTypeRepo, // This implements SensorTypeRepository
+		deviceRepo,     // This now implements all DeviceRepository methods
+		cacheRepo,      // This implements CacheRepository
+		influxRepo,     // This implements InfluxRepository
 	)
 
-	// Create MQTT service with data service
-	mqttCfg := mqtt.Config{
-		Broker:   cfg.MQTTBroker,
-		ClientID: "agrisense-mqtt-handler",
-		Username: cfg.MQTTUsername,
-		Password: cfg.MQTTPassword,
-	}
+	// Test data processing
+	testPayload := []byte(`{
+        "timestamp": "2024-03-08T12:00:00Z",
+        "readings": [
+            {"sensor": "temperature", "value": 23.5},
+            {"sensor": "humidity", "value": 65.2}
+        ]
+    }`)
 
-	service, err := mqtt.NewService(mqttCfg)
+	err = dataService.ProcessTelemetry("test-device-001", testPayload)
 	if err != nil {
-		log.Fatalf("Failed to create MQTT service: %v", err)
+		t.Errorf("Failed to process telemetry: %v", err)
 	}
 
-	// Start MQTT service
-	if err := service.Start(); err != nil {
-		log.Fatalf("Failed to start MQTT service: %v", err)
+	// Wait for async writes
+	time.Sleep(2 * time.Second)
+
+	// Verify data in Redis
+	temp, err := dataService.GetLatestReading("test-device-001", "temperature")
+	if err != nil {
+		t.Errorf("Failed to get latest reading: %v", err)
 	}
-
-	log.Println("MQTT handler started. Waiting for messages...")
-
-	// Wait for interrupt signal
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	<-sigChan
-
-	// Graceful shutdown
-	log.Println("Shutting down MQTT handler...")
-	service.Stop()
+	if temp.Value != 23.5 {
+		t.Errorf("Expected 23.5, got %f", temp.Value)
+	}
 }

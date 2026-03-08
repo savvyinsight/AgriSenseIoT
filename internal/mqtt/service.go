@@ -4,13 +4,17 @@ import (
 	"log"
 
 	"github.com/savvyinsight/agrisenseiot/internal/mqtt/handlers"
+	"github.com/savvyinsight/agrisenseiot/internal/service/data"
 )
 
 type Service struct {
-	client *Client
+	client      *Client
+	dataService *data.Service
 }
 
-func NewService(cfg Config) (*Service, error) {
+func NewService(cfg Config, dataService *data.Service) (*Service, error) {
+	// Initialize handlers with the data service
+	handlers.Init(dataService)
 	handlers := &Handlers{
 		TelemetryHandler: handlers.HandleTelemetry,
 		HeartbeatHandler: handlers.HandleHeartbeat,

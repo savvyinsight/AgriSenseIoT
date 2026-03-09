@@ -11,17 +11,17 @@ We'll build AgriSenseIoT in **7 iterations**, each delivering working, testable 
 **Goal**: Working development environment with all services running.
 
 ### Tasks
-- [ ] Initialize Go module: `go mod init github.com/yourname/agrisenseiot`
-- [ ] Create project structure (folders from `structure.md`)
-- [ ] Write base configuration loader (`internal/config/config.go`)
-- [ ] Create Docker Compose for all dependencies:
+- [x] Initialize Go module: `go mod init github.com/yourname/agrisenseiot`
+- [x] Create project structure (folders from `structure.md`)
+- [x] Write base configuration loader (`internal/config/config.go`)
+- [x] Create Docker Compose for all dependencies:
   - PostgreSQL
   - InfluxDB
   - Redis
   - EMQX
-- [ ] Write initialization scripts for databases
-- [ ] Create Makefile with basic commands (run, test, docker-up)
-- [ ] Test connectivity between services
+- [x] Write initialization scripts for databases
+- [x] Create Makefile with basic commands (run, test, docker-up)
+- [x] Test connectivity between services
 
 ### Deliverables
 ```
@@ -43,29 +43,29 @@ go run cmd/server/main.go  # Starts without panic
 **Goal**: Data layer complete with repositories and migrations.
 
 ### Tasks
-- [ ] Write domain entities (`internal/domain/`)
+- [x] Write domain entities (`internal/domain/`)
   - `user.go`
   - `device.go`
   - `sensor.go`
   - `alert.go`
   - `command.go`
-- [ ] Write repository interfaces in domain
-- [ ] Implement PostgreSQL repositories (`internal/repository/postgres/`)
+- [x] Write repository interfaces in domain
+- [x] Implement PostgreSQL repositories (`internal/repository/postgres/`)
   - Connection pool setup
   - User repository (CRUD)
   - Device repository (CRUD + status updates)
   - Alert rule repository
-- [ ] Write database migrations (`internal/repository/postgres/migrations/`)
+- [x] Write database migrations (`internal/repository/postgres/migrations/`)
   - `001_init.sql` (all tables from database.md)
   - `002_add_indexes.sql`
-- [ ] Implement InfluxDB repository (`internal/repository/influxdb/`)
+- [x] Implement InfluxDB repository (`internal/repository/influxdb/`)
   - Write single data point
   - Batch write
   - Query by time range
-- [ ] Implement Redis repository (`internal/repository/redis/`)
+- [x] Implement Redis repository (`internal/repository/redis/`)
   - Latest reading cache
   - Device status cache
-- [ ] Write repository tests (with test containers)
+- [x] Write repository tests (with test containers)
 
 ### Deliverables
 ```

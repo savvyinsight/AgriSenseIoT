@@ -2,6 +2,8 @@ package postgres
 
 import (
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/savvyinsight/agrisenseiot/internal/domain"
@@ -19,8 +21,17 @@ func (r *AlertRepository) Create(alert *domain.Alert) error {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING id
     `
+	// Convert metadata to JSON if present
+	var metadataJSON []byte
+	var err error
+	if alert.Metadata != nil {
+		metadataJSON, err = json.Marshal(alert.Metadata)
+		if err != nil {
+			return fmt.Errorf("failed to marshal metadata: %w", err)
+		}
+	}
 
-	err := r.DB.QueryRow(
+	err = r.DB.QueryRow(
 		query,
 		alert.RuleID,
 		alert.DeviceID,
@@ -29,7 +40,7 @@ func (r *AlertRepository) Create(alert *domain.Alert) error {
 		alert.Severity,
 		alert.Status,
 		alert.TriggeredAt,
-		alert.Metadata,
+		metadataJSON, // Pass as []byte, not map
 	).Scan(&alert.ID)
 
 	return err
@@ -53,6 +64,8 @@ func (r *AlertRepository) GetActive() ([]domain.Alert, error) {
 	var alerts []domain.Alert
 	for rows.Next() {
 		var alert domain.Alert
+		var metadataJSON []byte
+		// ... scan into metadataJSON ...
 		err := rows.Scan(
 			&alert.ID,
 			&alert.RuleID,
@@ -64,11 +77,19 @@ func (r *AlertRepository) GetActive() ([]domain.Alert, error) {
 			&alert.TriggeredAt,
 			&alert.AcknowledgedAt,
 			&alert.ResolvedAt,
-			&alert.Metadata,
+			&metadataJSON, // Scan as []byte, not map
 		)
 		if err != nil {
 			return nil, err
 		}
+
+		// Unmarshal JSON into map
+		if len(metadataJSON) > 0 {
+			if err := json.Unmarshal(metadataJSON, &alert.Metadata); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal metadata: %w", err)
+			}
+		}
+
 		alerts = append(alerts, alert)
 	}
 
@@ -93,6 +114,8 @@ func (r *AlertRepository) GetByDeviceID(deviceID int) ([]domain.Alert, error) {
 	var alerts []domain.Alert
 	for rows.Next() {
 		var alert domain.Alert
+		var metadataJSON []byte
+		// ... scan into metadataJSON ...
 		err := rows.Scan(
 			&alert.ID,
 			&alert.RuleID,
@@ -104,11 +127,19 @@ func (r *AlertRepository) GetByDeviceID(deviceID int) ([]domain.Alert, error) {
 			&alert.TriggeredAt,
 			&alert.AcknowledgedAt,
 			&alert.ResolvedAt,
-			&alert.Metadata,
+			&metadataJSON, // Scan as []byte, not map
 		)
 		if err != nil {
 			return nil, err
 		}
+
+		// Unmarshal JSON into map
+		if len(metadataJSON) > 0 {
+			if err := json.Unmarshal(metadataJSON, &alert.Metadata); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal metadata: %w", err)
+			}
+		}
+
 		alerts = append(alerts, alert)
 	}
 
@@ -133,6 +164,8 @@ func (r *AlertRepository) GetByRuleID(ruleID int) ([]domain.Alert, error) {
 	var alerts []domain.Alert
 	for rows.Next() {
 		var alert domain.Alert
+		var metadataJSON []byte
+		// ... scan into metadataJSON ...
 		err := rows.Scan(
 			&alert.ID,
 			&alert.RuleID,
@@ -144,11 +177,19 @@ func (r *AlertRepository) GetByRuleID(ruleID int) ([]domain.Alert, error) {
 			&alert.TriggeredAt,
 			&alert.AcknowledgedAt,
 			&alert.ResolvedAt,
-			&alert.Metadata,
+			&metadataJSON, // Scan as []byte, not map
 		)
 		if err != nil {
 			return nil, err
 		}
+
+		// Unmarshal JSON into map
+		if len(metadataJSON) > 0 {
+			if err := json.Unmarshal(metadataJSON, &alert.Metadata); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal metadata: %w", err)
+			}
+		}
+
 		alerts = append(alerts, alert)
 	}
 
@@ -185,6 +226,8 @@ func (r *AlertRepository) List(limit, offset int) ([]domain.Alert, int64, error)
 	var alerts []domain.Alert
 	for rows.Next() {
 		var alert domain.Alert
+		var metadataJSON []byte
+		// ... scan into metadataJSON ...
 		err := rows.Scan(
 			&alert.ID,
 			&alert.RuleID,
@@ -196,11 +239,19 @@ func (r *AlertRepository) List(limit, offset int) ([]domain.Alert, int64, error)
 			&alert.TriggeredAt,
 			&alert.AcknowledgedAt,
 			&alert.ResolvedAt,
-			&alert.Metadata,
+			&metadataJSON, // Scan as []byte, not map
 		)
 		if err != nil {
 			return nil, 0, err
 		}
+
+		// Unmarshal JSON into map
+		if len(metadataJSON) > 0 {
+			if err := json.Unmarshal(metadataJSON, &alert.Metadata); err != nil {
+				return nil, 0, fmt.Errorf("failed to unmarshal metadata: %w", err)
+			}
+		}
+
 		alerts = append(alerts, alert)
 	}
 

@@ -34,7 +34,7 @@ func NewRepository(cfg Config) (*Repository, error) {
 	}
 
 	if health.Status != "pass" {
-		return nil, fmt.Errorf("InfluxDB health check failed: %s", health.Message)
+		return nil, fmt.Errorf("InfluxDB health check failed: %s", *health.Message)
 	}
 
 	return &Repository{

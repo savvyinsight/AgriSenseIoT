@@ -2,46 +2,47 @@ package redis
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/savvyinsight/agrisenseiot/internal/domain"
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/redis"
 )
 
 func setupRedisContainer(t *testing.T) (*CacheRepository, func()) {
 	ctx := context.Background()
 
-	// Create Redis container
-	redisContainer, err := redis.RunContainer(ctx,
-		testcontainers.WithImage("redis:7-alpine"),
+	// Create Redis container using current API
+	redisContainer, err := redis.Run(ctx,
+		"redis:7-alpine",
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Get connection endpoint
-	endpoint, err := redisContainer.Endpoint(ctx, "")
+	// Get connection string
+	connectionString, err := redisContainer.ConnectionString(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Parse host and port
-	host := endpoint
-	port := 6379
+	// Parse the connection string (format: redis://localhost:32794)
+	// Remove the redis:// prefix
+	addr := strings.TrimPrefix(connectionString, "redis://")
 
-	// If endpoint contains port, parse it properly
-	// Format is typically "host:port"
+	// Split into host and port
+	parts := strings.Split(addr, ":")
+	if len(parts) != 2 {
+		t.Fatalf("Unexpected address format: %s", addr)
+	}
 
-	repo, cleanup := setupRedisWithHostPort(t, host, port, redisContainer)
-	return repo, cleanup
-}
+	host := parts[0]
+	port := 0
+	fmt.Sscanf(parts[1], "%d", &port)
 
-func setupRedisWithHostPort(t *testing.T, host string, port int, container *redis.RedisContainer) (*CacheRepository, func()) {
-	ctx := context.Background()
-
-	// Create Redis client with proper address format
+	// Create Redis client
 	client, err := NewConnection(Config{
 		Host:     host,
 		Port:     port,
@@ -56,7 +57,7 @@ func setupRedisWithHostPort(t *testing.T, host string, port int, container *redi
 
 	cleanup := func() {
 		client.Close()
-		container.Terminate(ctx)
+		redisContainer.Terminate(ctx)
 	}
 
 	return repo, cleanup

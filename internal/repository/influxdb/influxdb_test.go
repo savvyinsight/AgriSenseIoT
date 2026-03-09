@@ -7,36 +7,60 @@ import (
 
 	"github.com/savvyinsight/agrisenseiot/internal/domain"
 	"github.com/testcontainers/testcontainers-go"
-	influxdbmodule "github.com/testcontainers/testcontainers-go/modules/influxdb"
 )
 
 func setupInfluxDBContainer(t *testing.T) (*Repository, func()) {
 	ctx := context.Background()
 
-	// Create InfluxDB container
-	influxContainer, err := influxdbmodule.RunContainer(ctx,
-		testcontainers.WithImage("influxdb:2.7-alpine"),
-		influxdbmodule.WithAdminToken("test-token"),
-		influxdbmodule.WithDatabase("testdb"),
-		influxdbmodule.WithUsername("admin"),
-		influxdbmodule.WithPassword("admin123"),
-	)
+	// Create InfluxDB container - using minimal options first
+	// The API might have changed, so we'll use a simpler approach
+	req := testcontainers.ContainerRequest{
+		Image:        "influxdb:2.7-alpine",
+		ExposedPorts: []string{"8086/tcp"},
+		Env: map[string]string{
+			"DOCKER_INFLUXDB_INIT_MODE":        "setup",
+			"DOCKER_INFLUXDB_INIT_USERNAME":    "admin",
+			"DOCKER_INFLUXDB_INIT_PASSWORD":    "admin123",
+			"DOCKER_INFLUXDB_INIT_ORG":         "my-org",
+			"DOCKER_INFLUXDB_INIT_BUCKET":      "testdb",
+			"DOCKER_INFLUXDB_INIT_ADMIN_TOKEN": "test-token",
+		},
+		WaitingFor: testcontainers.WithWaitStrategy(
+			testcontainers.WaitForHTTP("/health").
+				WithPort("8086/tcp").
+				WithStatusCodeMatcher(func(status int) bool {
+					return status == 200
+				})),
+	}
+
+	influxContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Get connection URL - use the correct method
-	url, err := influxContainer.RESTAPIURL(ctx)
+	// Get container host and port
+	host, err := influxContainer.Host(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	port, err := influxContainer.MappedPort(ctx, "8086")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Construct URL
+	url := "http://" + host + ":" + port.Port()
 
 	// Create repository
 	repo, err := NewRepository(Config{
-		URL:    url.String(),
+		URL:    url,
 		Token:  "test-token",
-		Org:    "test-org",
-		Bucket: "test-bucket",
+		Org:    "my-org",
+		Bucket: "testdb",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -54,6 +78,9 @@ func TestInfluxDBRepository(t *testing.T) {
 	repo, cleanup := setupInfluxDBContainer(t)
 	defer cleanup()
 
+	// Give InfluxDB a moment to initialize
+	time.Sleep(3 * time.Second)
+
 	// Test WriteData
 	data := &domain.SensorData{
 		DeviceID:   "test-device",
@@ -67,8 +94,8 @@ func TestInfluxDBRepository(t *testing.T) {
 		t.Fatalf("Failed to write data: %v", err)
 	}
 
-	// Wait a moment for data to be written
-	time.Sleep(1 * time.Second)
+	// Wait for data to be written
+	time.Sleep(2 * time.Second)
 
 	// Test Query
 	end := time.Now()
@@ -80,8 +107,9 @@ func TestInfluxDBRepository(t *testing.T) {
 	}
 
 	if len(results) == 0 {
-		t.Log("Warning: No results found - this might be due to InfluxDB timing")
-		// Don't fail the test, just log
+		t.Log("Warning: No results found - this might be due to InfluxDB indexing delay")
+	} else {
+		t.Logf("Found %d results", len(results))
 	}
 
 	// Test WriteBatch

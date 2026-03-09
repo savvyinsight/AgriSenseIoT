@@ -83,7 +83,7 @@ func main() {
 		Password: cfg.MQTTPassword,
 	}
 
-	service, err := mqtt.NewService(mqttCfg)
+	service, err := mqtt.NewService(mqttCfg, dataService)
 	if err != nil {
 		log.Fatalf("Failed to create MQTT service: %v", err)
 	}

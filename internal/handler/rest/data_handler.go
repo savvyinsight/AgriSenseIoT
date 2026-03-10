@@ -19,7 +19,7 @@ func NewDataHandler(dataService *data.Service) *DataHandler {
 }
 
 func (h *DataHandler) GetLatest(c *gin.Context) {
-	deviceID := c.Param("deviceId")
+	deviceID := c.Param("id") // Change from :deviceId to :id
 	sensorType := c.Query("sensor_type")
 	if sensorType == "" {
 		sensorType = "temperature" // Default

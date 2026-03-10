@@ -108,11 +108,11 @@ func main() {
 		}
 
 		// Data routes
-		data := api.Group("/devices/:deviceId/data")
+		data := api.Group("/devices/:id/data") // Change from :deviceId to :id
 		{
-			data.GET("/latest", dataHandler.GetLatest)
-			data.GET("/", dataHandler.GetHistorical)
-			data.GET("/aggregated", dataHandler.GetAggregated)
+			data.GET("/latest", dataHandler.GetLatest)         // Now /devices/:id/data/latest
+			data.GET("/", dataHandler.GetHistorical)           // Now /devices/:id/data/
+			data.GET("/aggregated", dataHandler.GetAggregated) // Now /devices/:id/data/aggregated
 		}
 	}
 

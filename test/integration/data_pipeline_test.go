@@ -8,6 +8,7 @@ import (
 	"github.com/savvyinsight/agrisenseiot/internal/repository/influxdb"
 	"github.com/savvyinsight/agrisenseiot/internal/repository/postgres"
 	"github.com/savvyinsight/agrisenseiot/internal/repository/redis"
+	"github.com/savvyinsight/agrisenseiot/internal/ruleengine"
 	"github.com/savvyinsight/agrisenseiot/internal/service/data"
 )
 
@@ -64,12 +65,22 @@ func TestDataPipeline(t *testing.T) {
 	sensorTypeRepo := &postgres.SensorTypeRepository{DB: pgDB}
 	cacheRepo := redis.NewCacheRepository(redisClient)
 
+	// Create rule engine
+	ruleEngine := ruleengine.NewEngine(
+		&postgres.AlertRuleRepository{DB: pgDB},
+		&postgres.AlertRepository{DB: pgDB},
+		&postgres.DeviceRepository{DB: pgDB},
+	)
+	ruleEngine.Start()
+	defer ruleEngine.Stop()
+
 	// Create data service with correct repositories
 	dataService := data.NewService(
 		sensorTypeRepo, // This implements SensorTypeRepository
 		deviceRepo,     // This now implements all DeviceRepository methods
 		cacheRepo,      // This implements CacheRepository
 		influxRepo,     // This implements InfluxRepository
+		ruleEngine,
 	)
 
 	// Test data processing

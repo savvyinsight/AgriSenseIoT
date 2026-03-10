@@ -11,6 +11,7 @@ import (
 	"github.com/savvyinsight/agrisenseiot/internal/repository/influxdb"
 	"github.com/savvyinsight/agrisenseiot/internal/repository/postgres"
 	"github.com/savvyinsight/agrisenseiot/internal/repository/redis"
+	"github.com/savvyinsight/agrisenseiot/internal/ruleengine"
 	"github.com/savvyinsight/agrisenseiot/internal/service/auth"
 	"github.com/savvyinsight/agrisenseiot/internal/service/data"
 )
@@ -69,6 +70,14 @@ func main() {
 	sensorTypeRepo := &postgres.SensorTypeRepository{DB: pgDB}
 	cacheRepo := redis.NewCacheRepository(redisClient)
 
+	// Create rule engine (optional for server)
+	ruleEngine := ruleengine.NewEngine(
+		&postgres.AlertRuleRepository{DB: pgDB},
+		&postgres.AlertRepository{DB: pgDB},
+	)
+	ruleEngine.Start()
+	defer ruleEngine.Stop()
+
 	// Create services
 	authService := auth.NewService(userRepo, cfg.JWTSecret, 24*time.Hour)
 	dataService := data.NewService(
@@ -76,6 +85,7 @@ func main() {
 		deviceRepo,
 		cacheRepo,
 		influxRepo,
+		ruleEngine,
 	)
 
 	// Create handlers

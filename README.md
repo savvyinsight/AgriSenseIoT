@@ -67,6 +67,7 @@ go run cmd/mqtt-handler/main.go
 
 # Run device simulator (terminal 3)
 go run scripts/generate-device-simulator/main.go
+
 # Register a user
 curl -X POST http://localhost:8080/api/v1/auth/register \
   -H "Content-Type: application/json" \
@@ -83,19 +84,23 @@ curl -X POST http://localhost:8080/api/v1/devices \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"device_id":"sensor-001","name":"Greenhouse Sensor","type":"sensor"}'
+```
+
 📚 API Documentation
 Full API documentation is available in docs/api.md
 
-Key Endpoints
-Method	Endpoint	Description
-POST	/api/v1/auth/register	Register new user
-POST	/api/v1/auth/login	Login and get JWT
-GET	/api/v1/devices	List all devices
-POST	/api/v1/devices	Register new device
-GET	/api/v1/devices/:id/data/latest	Get latest sensor reading
-POST	/api/v1/alerts/rules	Create alert rule
-GET	/api/v1/alerts/active	Get active alerts
-POST	/api/v1/devices/:id/commands	Send command to device
+### Key Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/auth/register` | Register new user |
+| POST | `/api/v1/auth/login` | Login and get JWT |
+| GET  | `/api/v1/devices` | List all devices |
+| POST | `/api/v1/devices` | Register new device |
+| GET  | `/api/v1/devices/:id/data/latest` | Get latest sensor reading |
+| POST | `/api/v1/alerts/rules` | Create alert rule |
+| GET  | `/api/v1/alerts/active` | Get active alerts |
+| POST | `/api/v1/devices/:id/commands` | Send command to device |
 🧪 Testing
 # Run all tests
 go test ./... -v

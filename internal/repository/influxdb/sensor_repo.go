@@ -114,9 +114,21 @@ func (r *Repository) QueryAggregate(deviceID string, sensorType string, start, e
 	var data []domain.AggregatedData
 	for result.Next() {
 		record := result.Record()
+
+		// Handle potential nil values
+		val := record.Value()
+		if val == nil {
+			continue
+		}
+
+		avg, ok := val.(float64)
+		if !ok {
+			continue
+		}
+
 		data = append(data, domain.AggregatedData{
 			Timestamp: record.Time(),
-			Avg:       record.Value().(float64),
+			Avg:       avg,
 		})
 	}
 

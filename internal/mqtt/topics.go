@@ -1,31 +1,38 @@
 package mqtt
 
-import "fmt"
+import (
+	"strings"
+)
 
 // Topic patterns
 const (
-    // Device → Platform
-    TelemetryTopic = "device/+/telemetry"  // device/{id}/telemetry
-    HeartbeatTopic = "device/+/heartbeat"  // device/{id}/heartbeat
-    ResponseTopic  = "device/+/response"   // device/{id}/response
-    
-    // Platform → Device
-    CommandTopic = "device/%s/commands"    // device/{id}/commands
-    ConfigTopic  = "device/%s/config"      // device/{id}/config
+	// Device → Platform
+	TelemetryTopic = "device/+/telemetry"
+	HeartbeatTopic = "device/+/heartbeat"
+	ResponseTopic  = "device/+/response"
+
+	// Platform → Device
+	CommandTopic = "device/%s/commands"
+	ConfigTopic  = "device/%s/config"
 )
 
 // GetCommandTopic returns the command topic for a specific device
 func GetCommandTopic(deviceID string) string {
-    return fmt.Sprintf("device/%s/commands", deviceID)
+	return "device/" + deviceID + "/commands"
 }
 
 // GetConfigTopic returns the config topic for a specific device
 func GetConfigTopic(deviceID string) string {
-    return fmt.Sprintf("device/%s/config", deviceID)
+	return "device/" + deviceID + "/config"
 }
 
-// ExtractDeviceIDFromTopic extracts device ID from subscription topics
-func ExtractDeviceIDFromTopic(topic string, prefix string) string {
-    // Example: device/esp32_001/telemetry -> esp32_001
-    return topic[len(prefix)+1 : len(topic)-len("/telemetry")-1]
+// ExtractDeviceIDFromTopic extracts device ID from any subscription topic
+func ExtractDeviceIDFromTopic(topic string) string {
+	// Topic format: device/{device_id}/{suffix}
+	// Split by "/" and return the second part
+	parts := strings.Split(topic, "/")
+	if len(parts) >= 3 {
+		return parts[1] // device_id is the second part
+	}
+	return ""
 }

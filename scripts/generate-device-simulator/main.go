@@ -80,6 +80,14 @@ func (s *Simulator) sendTelemetry() {
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
+	// 20% chance of high temperature
+	var temp float64
+	if rand.Float32() < 0.2 {
+		temp = 32 + rand.Float64()*8 // 32-40°C (alert zone)
+	} else {
+		temp = 20 + rand.Float64()*8 // 20-28°C (normal)
+	}
+
 	for {
 		select {
 		case <-s.stopChan:
@@ -88,7 +96,7 @@ func (s *Simulator) sendTelemetry() {
 			data := map[string]interface{}{
 				"timestamp": time.Now(),
 				"readings": []map[string]interface{}{
-					{"sensor": "temperature", "value": 20 + rand.Float64()*10},
+					{"sensor": "temperature", "value": temp},
 					{"sensor": "humidity", "value": 50 + rand.Float64()*20},
 					{"sensor": "soil_moisture", "value": 30 + rand.Float64()*40},
 					{"sensor": "light_intensity", "value": 1000 + rand.Float64()*9000},

@@ -8,10 +8,12 @@ import (
 
 	"github.com/savvyinsight/agrisenseiot/internal/config"
 	"github.com/savvyinsight/agrisenseiot/internal/mqtt"
+	"github.com/savvyinsight/agrisenseiot/internal/mqtt/handlers"
 	"github.com/savvyinsight/agrisenseiot/internal/repository/influxdb"
 	"github.com/savvyinsight/agrisenseiot/internal/repository/postgres"
 	"github.com/savvyinsight/agrisenseiot/internal/repository/redis"
 	"github.com/savvyinsight/agrisenseiot/internal/ruleengine"
+	"github.com/savvyinsight/agrisenseiot/internal/service/control"
 	"github.com/savvyinsight/agrisenseiot/internal/service/data"
 )
 
@@ -67,6 +69,8 @@ func main() {
 	deviceRepo := &postgres.DeviceRepository{DB: pgDB}
 	sensorTypeRepo := &postgres.SensorTypeRepository{DB: pgDB}
 	cacheRepo := redis.NewCacheRepository(redisClient)
+	// 1.First, create repositories (depend on DB only)
+	cmdRepo := &postgres.CommandRepository{DB: pgDB}
 
 	// Create rule engine
 	ruleEngine := ruleengine.NewEngine(
@@ -94,13 +98,47 @@ func main() {
 		Password: cfg.MQTTPassword,
 	}
 
-	service, err := mqtt.NewService(mqttCfg, dataService)
+	// 2. Create MQTT client (needs only config)
+	mqttClient, err := mqtt.NewClient(mqtt.Config{
+		Broker:   cfg.MQTTBroker,
+		ClientID: "agrisense-mqtt-handler",
+		Username: cfg.MQTTUsername,
+		Password: cfg.MQTTPassword,
+	}, nil) // nil handlers for now
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 3. Create control service (needs repos + MQTT client)
+	controlService := control.NewService(
+		cmdRepo,
+		deviceRepo,
+		func(deviceID string, payload []byte) error {
+			return mqttClient.PublishCommand(deviceID, payload)
+		},
+	)
+
+	// 4. Create response callback (needs control service)
+	responseCallback := func(deviceID string, payload []byte) {
+		controlService.HandleCommandResponse(deviceID, payload)
+	}
+
+	// 5. Create MQTT service with all handlers
+	mqttService, err := mqtt.NewService(
+		mqttCfg,
+		dataService,
+		handlers.HandleTelemetry,
+		handlers.HandleHeartbeat,
+		func(deviceID string, payload []byte) {
+			handlers.HandleResponse(deviceID, payload, responseCallback)
+		},
+	)
 	if err != nil {
 		log.Fatalf("Failed to create MQTT service: %v", err)
 	}
 
 	// Start MQTT service
-	if err := service.Start(); err != nil {
+	if err := mqttService.Start(); err != nil {
 		log.Fatalf("Failed to start MQTT service: %v", err)
 	}
 
@@ -113,5 +151,5 @@ func main() {
 
 	// Graceful shutdown
 	log.Println("Shutting down MQTT handler...")
-	service.Stop()
+	mqttService.Stop()
 }

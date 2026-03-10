@@ -93,7 +93,7 @@ go run cmd/server/main.go  # Starts without panic
   - `heartbeat.go` - Update device last_seen status
   - `response.go` - Handle command acknowledgments
 - [ ] Create device authentication (JWT or device credentials)
-- [ ] Implement EMQX webhook auth (optional)
+- [ ] xxxxxxxxxx -- Example: Partition alerts by monthCREATE TABLE alerts_partitioned (    LIKE alerts INCLUDING DEFAULTS) PARTITION BY RANGE (triggered_at);​-- Create monthly partitionsCREATE TABLE alerts_2024_01 PARTITION OF alerts_partitioned    FOR VALUES FROM ('2024-01-01') TO ('2024-02-01');sql
 - [x] Write device simulator (`scripts/generate-device-simulator/`)
   - Simulate 10 devices sending data every 30 seconds
 - [x] Test data flow: Simulator → EMQX → MQTT Handler → Services
@@ -146,7 +146,7 @@ Device → EMQX → MQTT Handler → Data Service → Redis (latest)
 **Goal**: Complete API for web frontend.
 
 ### Tasks
-- [ ] Implement JWT authentication (`internal/service/auth/`)
+- [x] Implement JWT authentication (`internal/service/auth/`)
   - Register
   - Login
   - Token validation middleware
@@ -187,14 +187,14 @@ Device → EMQX → MQTT Handler → Data Service → Redis (latest)
   - `evaluator.go` - Condition checking
   - `threshold.go` - Threshold rules
   - `composite.go` - AND/OR combinations
-- [ ] Load rules from database (with caching)
-- [ ] Connect rule engine to data pipeline
+- [x] Load rules from database (with caching)
+- [x] Connect rule engine to data pipeline
 - [ ] Implement alert service (`internal/service/alert/`)
   - Create alert records
   - WebSocket notifications (real-time)
   - Email notifications (SMTP)
   - Alert acknowledgment
-- [ ] Create alert history API
+- [x] Create alert history API
 - [ ] Test alert latency and accuracy
 
 ### Flow:

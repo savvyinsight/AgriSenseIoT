@@ -8,12 +8,14 @@ import (
 	"github.com/savvyinsight/agrisenseiot/internal/config"
 	"github.com/savvyinsight/agrisenseiot/internal/handler/rest"
 	"github.com/savvyinsight/agrisenseiot/internal/middleware"
+	"github.com/savvyinsight/agrisenseiot/internal/mqtt"
 	"github.com/savvyinsight/agrisenseiot/internal/repository/influxdb"
 	"github.com/savvyinsight/agrisenseiot/internal/repository/postgres"
 	"github.com/savvyinsight/agrisenseiot/internal/repository/redis"
 	"github.com/savvyinsight/agrisenseiot/internal/ruleengine"
 	"github.com/savvyinsight/agrisenseiot/internal/service/alert"
 	"github.com/savvyinsight/agrisenseiot/internal/service/auth"
+	"github.com/savvyinsight/agrisenseiot/internal/service/control"
 	"github.com/savvyinsight/agrisenseiot/internal/service/data"
 )
 
@@ -71,17 +73,29 @@ func main() {
 	sensorTypeRepo := &postgres.SensorTypeRepository{DB: pgDB}
 	cacheRepo := redis.NewCacheRepository(redisClient)
 
-	// Create rule engine (optional for server)
+	// 1. Create MQTT client for sending commands (publisher only)
+	mqttClient, err := mqtt.NewClient(mqtt.Config{
+		Broker:   cfg.MQTTBroker,
+		ClientID: "agrisense-server",
+		Username: cfg.MQTTUsername,
+		Password: cfg.MQTTPassword,
+	}, nil) // nil handlers since server only publishes
+	if err != nil {
+		log.Fatalf("Failed to create MQTT client: %v", err)
+	}
+	defer mqttClient.Disconnect()
+
+	// 2. Create services that don't depend on each other
+	authService := auth.NewService(userRepo, cfg.JWTSecret, 24*time.Hour)
 	ruleEngine := ruleengine.NewEngine(
 		&postgres.AlertRuleRepository{DB: pgDB},
 		&postgres.AlertRepository{DB: pgDB},
-		&postgres.DeviceRepository{DB: pgDB},
+		deviceRepo,
 	)
 	ruleEngine.Start()
 	defer ruleEngine.Stop()
 
-	// Create services
-	authService := auth.NewService(userRepo, cfg.JWTSecret, 24*time.Hour)
+	// 3. Create data service (needs ruleEngine)
 	dataService := data.NewService(
 		sensorTypeRepo,
 		deviceRepo,
@@ -90,15 +104,28 @@ func main() {
 		ruleEngine,
 	)
 
+	// 4. Create control service with injected publish function
+	controlService := control.NewService(
+		&postgres.CommandRepository{DB: pgDB},
+		deviceRepo,
+		func(deviceID string, payload []byte) error {
+			return mqttClient.PublishCommand(deviceID, payload)
+		},
+	)
+
+	// 5. Create alert service
+	alertService := alert.NewService(
+		&postgres.AlertRepository{DB: pgDB},
+		&postgres.AlertRuleRepository{DB: pgDB},
+		deviceRepo,
+	)
+
 	// Create handlers
 	authHandler := rest.NewAuthHandler(authService)
 	deviceHandler := rest.NewDeviceHandler(deviceRepo)
 	dataHandler := rest.NewDataHandler(dataService)
-
-	alertRepo := &postgres.AlertRepository{DB: pgDB}
-	alertRuleRepo := &postgres.AlertRuleRepository{DB: pgDB}
-	alertService := alert.NewService(alertRepo, alertRuleRepo, deviceRepo)
 	alertHandler := rest.NewAlertHandler(alertService)
+	controlHandler := rest.NewControlHandler(controlService)
 
 	// Setup Gin router
 	r := gin.Default()
@@ -143,6 +170,14 @@ func main() {
 			alerts.PUT("/rules/:id", alertHandler.UpdateRule)
 			alerts.DELETE("/rules/:id", alertHandler.DeleteRule)
 			alerts.POST("/:id/acknowledge", alertHandler.AcknowledgeAlert)
+		}
+
+		// Control routes
+		deviceGroup := api.Group("/devices/:id")
+		{
+			deviceGroup.POST("/commands", controlHandler.SendCommand)
+			deviceGroup.GET("/commands", controlHandler.ListDeviceCommands)
+			deviceGroup.GET("/commands/:cmdId", controlHandler.GetCommandStatus)
 		}
 	}
 

@@ -3,22 +3,26 @@ package mqtt
 import (
 	"log"
 
-	"github.com/savvyinsight/agrisenseiot/internal/mqtt/handlers"
 	"github.com/savvyinsight/agrisenseiot/internal/service/data"
 )
 
 type Service struct {
-	client      *Client
-	dataService *data.Service
+	client          *Client
+	dataService     *data.Service
+	responseHandler func(deviceID string, payload []byte) // Add this
 }
 
-func NewService(cfg Config, dataService *data.Service) (*Service, error) {
-	// Initialize handlers with the data service
-	handlers.Init(dataService)
+func NewService(cfg Config,
+	dataService *data.Service,
+	telemetryHandler func(deviceID string, payload []byte),
+	heartbeatHandler func(deviceID string, payload []byte),
+	responseHandler func(deviceID string, payload []byte), // New param
+) (*Service, error) {
+	// Store handlers directly
 	handlers := &Handlers{
-		TelemetryHandler: handlers.HandleTelemetry,
-		HeartbeatHandler: handlers.HandleHeartbeat,
-		ResponseHandler:  handlers.HandleResponse,
+		TelemetryHandler: telemetryHandler,
+		HeartbeatHandler: heartbeatHandler,
+		ResponseHandler:  responseHandler,
 	}
 
 	client, err := NewClient(cfg, handlers)
@@ -27,7 +31,9 @@ func NewService(cfg Config, dataService *data.Service) (*Service, error) {
 	}
 
 	return &Service{
-		client: client,
+		client:          client,
+		dataService:     dataService,
+		responseHandler: responseHandler,
 	}, nil
 }
 

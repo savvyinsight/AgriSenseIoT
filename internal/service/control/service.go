@@ -7,24 +7,24 @@ import (
 	"time"
 
 	"github.com/savvyinsight/agrisenseiot/internal/domain"
-	"github.com/savvyinsight/agrisenseiot/internal/mqtt"
 )
 
 type Service struct {
 	cmdRepo    domain.CommandRepository
 	deviceRepo domain.DeviceRepository
-	mqttClient *mqtt.Client
+	// Remove mqtt.Client - we'll use a callback
+	publishFunc func(deviceID string, payload []byte) error
 }
 
 func NewService(
 	cmdRepo domain.CommandRepository,
 	deviceRepo domain.DeviceRepository,
-	mqttClient *mqtt.Client,
+	publishFunc func(deviceID string, payload []byte) error, // Inject behavior
 ) *Service {
 	return &Service{
-		cmdRepo:    cmdRepo,
-		deviceRepo: deviceRepo,
-		mqttClient: mqttClient,
+		cmdRepo:     cmdRepo,
+		deviceRepo:  deviceRepo,
+		publishFunc: publishFunc,
 	}
 }
 
@@ -65,7 +65,8 @@ func (s *Service) SendCommand(deviceID int, req CommandRequest, userID *int) (*d
 
 		data, _ := json.Marshal(payload)
 
-		if err := s.mqttClient.PublishCommand(device.DeviceID, data); err != nil {
+		// Use injected publish function
+		if err := s.publishFunc(device.DeviceID, data); err != nil {
 			log.Printf("Failed to publish command %d: %v", cmd.ID, err)
 			s.cmdRepo.UpdateStatus(cmd.ID, domain.CommandStatusFailed)
 			return

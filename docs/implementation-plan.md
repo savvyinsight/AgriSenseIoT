@@ -82,21 +82,21 @@ go run cmd/server/main.go  # Starts without panic
 **Goal**: Devices can connect, authenticate, and send data.
 
 ### Tasks
-- [ ] Implement MQTT client (`internal/mqtt/client.go`)
-- [ ] Connect to EMQX broker
-- [ ] Subscribe to device topics:
+- [x] Implement MQTT client (`internal/mqtt/client.go`)
+- [x] Connect to EMQX broker
+- [x] Subscribe to device topics:
   - `device/+/telemetry`
   - `device/+/heartbeat`
   - `device/+/response`
-- [ ] Implement MQTT handlers:
+- [x] Implement MQTT handlers:
   - `telemetry.go` - Parse and validate incoming sensor data
   - `heartbeat.go` - Update device last_seen status
   - `response.go` - Handle command acknowledgments
 - [ ] Create device authentication (JWT or device credentials)
 - [ ] Implement EMQX webhook auth (optional)
-- [ ] Write device simulator (`scripts/generate-device-simulator/`)
+- [x] Write device simulator (`scripts/generate-device-simulator/`)
   - Simulate 10 devices sending data every 30 seconds
-- [ ] Test data flow: Simulator → EMQX → MQTT Handler → Services
+- [x] Test data flow: Simulator → EMQX → MQTT Handler → Services
 
 ### Deliverables
 ```
@@ -113,15 +113,15 @@ go run cmd/server/main.go  # Starts without panic
 **Goal**: Incoming data is validated, cached, and stored.
 
 ### Tasks
-- [ ] Create data service (`internal/service/data/service.go`)
-- [ ] Implement validation logic (schema, ranges)
-- [ ] Store latest reading in Redis
-- [ ] Store time-series data in InfluxDB (batch for performance)
-- [ ] Implement data query API:
+- [x] Create data service (`internal/service/data/service.go`)
+- [x] Implement validation logic (schema, ranges)
+- [x] Store latest reading in Redis
+- [x] Store time-series data in InfluxDB (batch for performance)
+- [x] Implement data query API:
   - `GET /api/v1/devices/{id}/latest`
   - `GET /api/v1/devices/{id}/data`
-- [ ] Add data aggregation (min, max, avg over time)
-- [ ] Write integration tests for data pipeline
+- [x] Add data aggregation (min, max, avg over time)
+- [x] Write integration tests for data pipeline
 
 ### Data Flow Complete:
 ```

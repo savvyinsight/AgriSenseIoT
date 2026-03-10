@@ -11,6 +11,7 @@ import (
 	"github.com/savvyinsight/agrisenseiot/internal/repository/influxdb"
 	"github.com/savvyinsight/agrisenseiot/internal/repository/postgres"
 	"github.com/savvyinsight/agrisenseiot/internal/repository/redis"
+	"github.com/savvyinsight/agrisenseiot/internal/ruleengine"
 	"github.com/savvyinsight/agrisenseiot/internal/service/data"
 )
 
@@ -67,12 +68,21 @@ func main() {
 	sensorTypeRepo := &postgres.SensorTypeRepository{DB: pgDB}
 	cacheRepo := redis.NewCacheRepository(redisClient)
 
+	// Create rule engine
+	ruleEngine := ruleengine.NewEngine(
+		&postgres.AlertRuleRepository{DB: pgDB},
+		&postgres.AlertRepository{DB: pgDB},
+	)
+	ruleEngine.Start()
+	defer ruleEngine.Stop()
+
 	// Create data service
 	dataService := data.NewService(
 		sensorTypeRepo,
 		deviceRepo,
 		cacheRepo,
 		influxRepo,
+		ruleEngine,
 	)
 
 	// Create MQTT service with data service

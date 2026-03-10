@@ -12,6 +12,7 @@ import (
 	"github.com/savvyinsight/agrisenseiot/internal/repository/postgres"
 	"github.com/savvyinsight/agrisenseiot/internal/repository/redis"
 	"github.com/savvyinsight/agrisenseiot/internal/ruleengine"
+	"github.com/savvyinsight/agrisenseiot/internal/service/alert"
 	"github.com/savvyinsight/agrisenseiot/internal/service/auth"
 	"github.com/savvyinsight/agrisenseiot/internal/service/data"
 )
@@ -93,6 +94,11 @@ func main() {
 	deviceHandler := rest.NewDeviceHandler(deviceRepo)
 	dataHandler := rest.NewDataHandler(dataService)
 
+	alertRepo := &postgres.AlertRepository{DB: pgDB}
+	alertRuleRepo := &postgres.AlertRuleRepository{DB: pgDB}
+	alertService := alert.NewService(alertRepo, alertRuleRepo, deviceRepo)
+	alertHandler := rest.NewAlertHandler(alertService)
+
 	// Setup Gin router
 	r := gin.Default()
 
@@ -123,6 +129,19 @@ func main() {
 			data.GET("/latest", dataHandler.GetLatest)         // Now /devices/:id/data/latest
 			data.GET("/", dataHandler.GetHistorical)           // Now /devices/:id/data/
 			data.GET("/aggregated", dataHandler.GetAggregated) // Now /devices/:id/data/aggregated
+		}
+
+		// Alert routes
+		alerts := api.Group("/alerts")
+		{
+			alerts.GET("/active", alertHandler.GetActiveAlerts)
+			alerts.GET("/history", alertHandler.GetAlertHistory)
+			alerts.POST("/rules", alertHandler.CreateRule)
+			alerts.GET("/rules", alertHandler.ListRules)
+			alerts.GET("/rules/:id", alertHandler.GetRule)
+			alerts.PUT("/rules/:id", alertHandler.UpdateRule)
+			alerts.DELETE("/rules/:id", alertHandler.DeleteRule)
+			alerts.POST("/:id/acknowledge", alertHandler.AcknowledgeAlert)
 		}
 	}
 

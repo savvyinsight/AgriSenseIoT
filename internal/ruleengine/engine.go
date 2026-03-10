@@ -2,7 +2,6 @@ package ruleengine
 
 import (
 	"log"
-	"strconv"
 	"sync"
 	"time"
 
@@ -15,16 +14,20 @@ type Engine struct {
 	evaluator  *Evaluator
 	alertSvc   domain.AlertRepository
 	ruleRepo   domain.AlertRuleRepository
+	deviceRepo domain.DeviceRepository
 	stopChan   chan struct{}
 }
 
-func NewEngine(ruleRepo domain.AlertRuleRepository, alertSvc domain.AlertRepository) *Engine {
+func NewEngine(ruleRepo domain.AlertRuleRepository,
+	alertSvc domain.AlertRepository,
+	deviceRepo domain.DeviceRepository) *Engine {
 	return &Engine{
-		rules:     make(map[int]*domain.AlertRule),
-		evaluator: NewEvaluator(),
-		ruleRepo:  ruleRepo,
-		alertSvc:  alertSvc,
-		stopChan:  make(chan struct{}),
+		rules:      make(map[int]*domain.AlertRule),
+		evaluator:  NewEvaluator(),
+		ruleRepo:   ruleRepo,
+		alertSvc:   alertSvc,
+		deviceRepo: deviceRepo,
+		stopChan:   make(chan struct{}),
 	}
 }
 
@@ -122,15 +125,16 @@ func (e *Engine) getSensorTypeID(sensorType string) int {
 }
 
 func (e *Engine) triggerAlert(rule *domain.AlertRule, data *domain.SensorData) {
-	deviceID, err := strconv.Atoi(data.DeviceID)
+	// Get device ID from database using the string device_id
+	device, err := e.deviceRepo.GetByDeviceID(data.DeviceID)
 	if err != nil {
-		log.Printf("Failed to convert device ID: %v", err)
+		log.Printf("Failed to find device %s: %v", data.DeviceID, err)
 		return
 	}
 
 	alert := &domain.Alert{
 		RuleID:      rule.ID,
-		DeviceID:    deviceID, // Map string to int
+		DeviceID:    device.ID, // Use the retrieved device ID
 		SensorValue: data.Value,
 		Message:     e.evaluator.FormatMessage(rule, data),
 		Severity:    rule.Severity,

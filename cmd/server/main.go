@@ -75,6 +75,7 @@ func main() {
 	ruleEngine := ruleengine.NewEngine(
 		&postgres.AlertRuleRepository{DB: pgDB},
 		&postgres.AlertRepository{DB: pgDB},
+		&postgres.DeviceRepository{DB: pgDB},
 	)
 	ruleEngine.Start()
 	defer ruleEngine.Stop()

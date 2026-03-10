@@ -79,21 +79,21 @@ func (c *Client) Subscribe() error {
 }
 
 func (c *Client) handleTelemetry(_ mqtt.Client, msg mqtt.Message) {
-	deviceID := ExtractDeviceIDFromTopic(msg.Topic(), "device")
+	deviceID := ExtractDeviceIDFromTopic(msg.Topic())
 	if c.handlers.TelemetryHandler != nil {
 		c.handlers.TelemetryHandler(deviceID, msg.Payload())
 	}
 }
 
 func (c *Client) handleHeartbeat(_ mqtt.Client, msg mqtt.Message) {
-	deviceID := ExtractDeviceIDFromTopic(msg.Topic(), "device")
+	deviceID := ExtractDeviceIDFromTopic(msg.Topic())
 	if c.handlers.HeartbeatHandler != nil {
 		c.handlers.HeartbeatHandler(deviceID, msg.Payload())
 	}
 }
 
 func (c *Client) handleResponse(_ mqtt.Client, msg mqtt.Message) {
-	deviceID := ExtractDeviceIDFromTopic(msg.Topic(), "device")
+	deviceID := ExtractDeviceIDFromTopic(msg.Topic())
 	if c.handlers.ResponseHandler != nil {
 		c.handlers.ResponseHandler(deviceID, msg.Payload())
 	}

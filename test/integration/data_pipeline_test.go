@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/savvyinsight/agrisenseiot/internal/config"
+	"github.com/savvyinsight/agrisenseiot/internal/domain"
 	"github.com/savvyinsight/agrisenseiot/internal/repository/influxdb"
 	"github.com/savvyinsight/agrisenseiot/internal/repository/postgres"
 	"github.com/savvyinsight/agrisenseiot/internal/repository/redis"
@@ -82,6 +83,20 @@ func TestDataPipeline(t *testing.T) {
 		influxRepo,     // This implements InfluxRepository
 		ruleEngine,
 	)
+
+	// After creating data service, add:
+	testDevice := &domain.Device{
+		DeviceID: "test-device-001",
+		Name:     "Test Device",
+		Type:     domain.DeviceTypeSensor,
+		Status:   domain.DeviceStatusOnline,
+		UserID:   1, // Make sure user 1 exists
+	}
+
+	err = deviceRepo.Create(testDevice)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Test data processing
 	testPayload := []byte(`{

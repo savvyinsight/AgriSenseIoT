@@ -69,7 +69,6 @@ func main() {
 	deviceRepo := &postgres.DeviceRepository{DB: pgDB}
 	sensorTypeRepo := &postgres.SensorTypeRepository{DB: pgDB}
 	cacheRepo := redis.NewCacheRepository(redisClient)
-	// 1.First, create repositories (depend on DB only)
 	cmdRepo := &postgres.CommandRepository{DB: pgDB}
 
 	// Create rule engine
@@ -90,42 +89,26 @@ func main() {
 		ruleEngine,
 	)
 
-	// Create MQTT service with data service
-	mqttCfg := mqtt.Config{
-		Broker:   cfg.MQTTBroker,
-		ClientID: "agrisense-mqtt-handler",
-		Username: cfg.MQTTUsername,
-		Password: cfg.MQTTPassword,
-	}
-
-	// 2. Create MQTT client (needs only config)
-	mqttClient, err := mqtt.NewClient(mqtt.Config{
-		Broker:   cfg.MQTTBroker,
-		ClientID: "agrisense-mqtt-handler",
-		Username: cfg.MQTTUsername,
-		Password: cfg.MQTTPassword,
-	}, nil) // nil handlers for now
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// 3. Create control service (needs repos + MQTT client)
+	// Create control service FIRST (before MQTT)
 	controlService := control.NewService(
 		cmdRepo,
 		deviceRepo,
-		func(deviceID string, payload []byte) error {
-			return mqttClient.PublishCommand(deviceID, payload)
-		},
+		nil, // Will set after MQTT is created
 	)
 
-	// 4. Create response callback (needs control service)
+	// Create response callback
 	responseCallback := func(deviceID string, payload []byte) {
 		controlService.HandleCommandResponse(deviceID, payload)
 	}
 
-	// 5. Create MQTT service with all handlers
+	// Create MQTT service ONCE with all handlers
 	mqttService, err := mqtt.NewService(
-		mqttCfg,
+		mqtt.Config{
+			Broker:   cfg.MQTTBroker,
+			ClientID: "agrisense-mqtt-handler",
+			Username: cfg.MQTTUsername,
+			Password: cfg.MQTTPassword,
+		},
 		dataService,
 		handlers.HandleTelemetry,
 		handlers.HandleHeartbeat,
@@ -136,6 +119,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create MQTT service: %v", err)
 	}
+
+	// Now set the publish function in control service
+	// You'll need to add this method to control.Service
+	controlService.SetPublishFunc(func(deviceID string, payload []byte) error {
+		return mqttService.SendCommand(deviceID, payload)
+	})
 
 	// Start MQTT service
 	if err := mqttService.Start(); err != nil {

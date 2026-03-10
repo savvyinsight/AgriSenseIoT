@@ -117,3 +117,7 @@ func (s *Service) HandleCommandResponse(deviceID string, payload []byte) {
 		log.Printf("Command %d failed: %s", cmd.ID, response.Message)
 	}
 }
+
+func (s *Service) SetPublishFunc(fn func(deviceID string, payload []byte) error) {
+	s.publishFunc = fn
+}

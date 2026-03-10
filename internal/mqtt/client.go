@@ -39,10 +39,21 @@ func NewClient(cfg Config, handlers *Handlers) (*Client, error) {
 	opts.SetConnectionLostHandler(connectionLostHandler)
 	opts.SetOnConnectHandler(connectHandler)
 
+	// Add this - wait for connection before returning
+	opts.SetConnectTimeout(30 * time.Second) // Add timeout
+
 	client := mqtt.NewClient(opts)
 
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		return nil, fmt.Errorf("failed to connect to MQTT broker: %w", token.Error())
+	}
+
+	//Wait a bit for connection to stabilize
+	time.Sleep(1 * time.Second) // Add small delay
+
+	// Verify connection before proceeding
+	if !client.IsConnected() {
+		return nil, fmt.Errorf("MQTT client not connected after connect")
 	}
 
 	return &Client{
@@ -60,6 +71,15 @@ func connectHandler(client mqtt.Client) {
 }
 
 func (c *Client) Subscribe() error {
+	// Ensure we're connected
+	// Subscribe() can be called anytime and will ensure connection first.
+	if !c.client.IsConnected() {
+		token := c.client.Connect()
+		if token.Wait() && token.Error() != nil {
+			return token.Error()
+		}
+	}
+
 	handlers := map[string]mqtt.MessageHandler{
 		TelemetryTopic: c.handleTelemetry,
 		HeartbeatTopic: c.handleHeartbeat,

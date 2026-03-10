@@ -83,19 +83,20 @@ func TestDataPipeline(t *testing.T) {
 		influxRepo,     // This implements InfluxRepository
 		ruleEngine,
 	)
-
-	// After creating data service, add:
-	testDevice := &domain.Device{
-		DeviceID: "test-device-001",
-		Name:     "Test Device",
-		Type:     domain.DeviceTypeSensor,
-		Status:   domain.DeviceStatusOnline,
-		UserID:   1, // Make sure user 1 exists
-	}
-
-	err = deviceRepo.Create(testDevice)
-	if err != nil {
-		t.Fatal(err)
+	// Ensure test device exists
+	existing, _ := deviceRepo.GetByDeviceID("test-device-001")
+	if existing == nil {
+		testDevice := &domain.Device{
+			DeviceID: "test-device-001",
+			Name:     "Test Device",
+			Type:     domain.DeviceTypeSensor,
+			Status:   domain.DeviceStatusOnline,
+			UserID:   1,
+		}
+		err = deviceRepo.Create(testDevice)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	// Test data processing

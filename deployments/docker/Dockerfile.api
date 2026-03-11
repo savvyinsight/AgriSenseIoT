@@ -1,7 +1,10 @@
-FROM golang:1.21-alpine AS builder
+// go mod using go 1.25
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
 COPY go.mod go.sum ./
+// set GOPROXY to speed up module download
+RUN go env -w GOPROXY=https://goproxy.cn,direct
 RUN go mod download
 
 COPY . .

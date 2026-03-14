@@ -2,9 +2,11 @@ package main
 
 import (
 	"log"
+	"net/http/pprof"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/savvyinsight/agrisenseiot/internal/config"
 	"github.com/savvyinsight/agrisenseiot/internal/handler/rest"
 	"github.com/savvyinsight/agrisenseiot/internal/middleware"
@@ -180,6 +182,18 @@ func main() {
 			deviceGroup.GET("/commands/:cmdId", controlHandler.GetCommandStatus)
 		}
 	}
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
+
+	// pprof routes
+	r.GET("/debug/pprof/", gin.WrapH(pprof.Handler("index")))
+	r.GET("/debug/pprof/heap", gin.WrapH(pprof.Handler("heap")))
+	r.GET("/debug/pprof/goroutine", gin.WrapH(pprof.Handler("goroutine")))
+	r.GET("/debug/pprof/block", gin.WrapH(pprof.Handler("block")))
+	r.GET("/debug/pprof/threadcreate", gin.WrapH(pprof.Handler("threadcreate")))
+
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok"})
+	})
 
 	log.Printf("Server starting on port %s", cfg.Port)
 	r.Run(":" + cfg.Port)

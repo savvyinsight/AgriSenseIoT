@@ -218,7 +218,7 @@ Data → Rule Engine → Match? → Yes → Create Alert → Notify (WS/Email)
 **Goal**: Remote control and automated actions.
 
 ### Tasks
-- [ ] Implement control service (`internal/service/control/`)
+- [x] Implement control service (`internal/service/control/`)
   - Command creation
   - Send via MQTT
   - Track status (pending → sent → delivered → executed)
@@ -245,15 +245,15 @@ Data → Rule Engine → Match? → Yes → Create Alert → Notify (WS/Email)
 **Goal**: Production-ready with performance testing.
 
 ### Tasks
-- [ ] Integration tests for all flows
-- [ ] Load testing with k6 (`test/load/`)
+- [x] Integration tests for all flows
+- [x] Load testing with k6 (`test/load/`)
   - 1000 concurrent devices
   - 100 msg/sec
-- [ ] Performance profiling (pprof)
+- [x] Performance profiling (pprof)
 - [ ] Database query optimization (EXPLAIN, indexes)
-- [ ] Add Prometheus metrics
+- [x] Add Prometheus metrics
 - [ ] Structured logging (JSON format)
-- [ ] Error handling review
+- [x] Error handling review
 - [ ] Security audit (SQL injection, XSS, etc.)
 
 ### Performance Targets
@@ -266,7 +266,23 @@ Data → Rule Engine → Match? → Yes → Create Alert → Notify (WS/Email)
 
 ---
 
-## Iteration 9: Frontend Basic (Week 9) - Optional
+## Iteration 9: Deployment & Documentation (Week 9)
+
+**Goal**: Production-ready deployment and comprehensive documentation
+
+### Tasks
+- [ ] Write complete README with setup instructions
+- [ ] Create production Docker Compose config
+- [ ] Deploy to VPS or cloud
+- [ ] Add SSL/TLS
+- [ ] Create demo video/screenshots
+- [ ] Document API endpoints
+
+---
+
+
+
+## Iteration 10: Frontend Basic (Week 9) - Optional
 
 **Goal**: Basic web dashboard if time permits.
 
@@ -313,6 +329,3 @@ For each iteration:
 
 ---
 
-## Next: Start Iteration 1
-
-Ready to begin? Let's set up the project structure and Docker environment.

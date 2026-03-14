@@ -114,10 +114,10 @@ docker ps
 
 ## Step 6: Monitoring
 
-- **API**: https://yourdomain.com
-- **EMQX Dashboard**: http://yourdomain.com:18083
-- **Metrics**: https://yourdomain.com/metrics
-- **Health Check**: https://yourdomain.com/health
+- **API**: <https://yourdomain.com>
+- **EMQX Dashboard**: <http://yourdomain.com:18083>
+- **Metrics**: <https://yourdomain.com/metrics>
+- **Health Check**: <https://yourdomain.com/health>
 
 ## Step 7: Backup
 
@@ -132,18 +132,21 @@ docker run --rm -v agrisenseiot_postgres_data:/data -v $(pwd):/backup alpine tar
 ## Troubleshooting
 
 ### Check logs
+
 ```bash
 docker logs agrisense-api
 docker logs agrisense-mqtt
 ```
 
-### Restart services
+Restart services
+
 ```bash
 cd deployments
 docker compose -f docker-compose.prod.yml restart
 ```
 
 ### Reset everything
+
 ```bash
 cd deployments
 docker compose -f docker-compose.prod.yml down -v

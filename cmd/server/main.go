@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/savvyinsight/agrisenseiot/internal/config"
 	"github.com/savvyinsight/agrisenseiot/internal/handler/rest"
+	"github.com/savvyinsight/agrisenseiot/internal/handler/websocket"
 	"github.com/savvyinsight/agrisenseiot/internal/middleware"
 	"github.com/savvyinsight/agrisenseiot/internal/mqtt"
 	"github.com/savvyinsight/agrisenseiot/internal/repository/influxdb"
@@ -90,6 +91,7 @@ func main() {
 
 	// 2. Create services that don't depend on each other
 	authService := auth.NewService(userRepo, cfg.JWTSecret, 24*time.Hour)
+	wsHander := websocket.NewHander(authService)
 	ruleEngine := ruleengine.NewEngine(
 		&postgres.AlertRuleRepository{DB: pgDB},
 		&postgres.AlertRepository{DB: pgDB},
@@ -140,6 +142,8 @@ func main() {
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
+
+	r.GET("/ws", wsHander.HandleWebSocket)
 
 	// Public routes
 	authGroup := r.Group("/api/v1/auth")

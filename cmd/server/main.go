@@ -155,8 +155,8 @@ func main() {
 		// Device routes
 		devices := api.Group("/devices")
 		{
-			devices.POST("/", deviceHandler.Create)
-			devices.GET("/", deviceHandler.List)
+			devices.POST("", deviceHandler.Create)
+			devices.GET("", deviceHandler.List)
 			devices.GET("/:id", deviceHandler.GetByID)
 			devices.PUT("/:id", deviceHandler.Update)
 			devices.DELETE("/:id", deviceHandler.Delete)

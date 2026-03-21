@@ -15,11 +15,12 @@ type Client struct {
 }
 
 type Hub struct {
-	clients    map[*Client]bool
-	broadcast  chan []byte
-	register   chan *Client
-	unregister chan *Client
-	mu         sync.RWMutex
+	clients     map[*Client]bool
+	userClients map[int]*Client //Track by user ID
+	broadcast   chan []byte
+	register    chan *Client
+	unregister  chan *Client
+	mu          sync.RWMutex
 }
 
 var hubInstance *Hub
@@ -28,10 +29,11 @@ var once sync.Once
 func GetHub() *Hub {
 	once.Do(func() {
 		hubInstance = &Hub{
-			clients:    make(map[*Client]bool),
-			broadcast:  make(chan []byte),
-			register:   make(chan *Client),
-			unregister: make(chan *Client),
+			clients:     make(map[*Client]bool),
+			userClients: make(map[int]*Client),
+			broadcast:   make(chan []byte),
+			register:    make(chan *Client),
+			unregister:  make(chan *Client),
 		}
 		go hubInstance.run()
 	})
@@ -43,15 +45,17 @@ func (h *Hub) run() {
 		select {
 		case client := <-h.register:
 			h.mu.Lock()
+			// Close existing connection for this user
+			if existing, ok := h.userClients[client.userID]; ok {
+				h.unregisterClient(existing)
+			}
 			h.clients[client] = true
+			h.userClients[client.userID] = client
 			h.mu.Unlock()
 			log.Printf("WebSocket client registered: user %d, total clients: %d", client.userID, len(h.clients))
 		case client := <-h.unregister:
 			h.mu.Lock()
-			if _, ok := h.clients[client]; ok {
-				delete(h.clients, client)
-				close(client.send)
-			}
+			h.unregisterClient(client)
 			h.mu.Unlock()
 			log.Printf("WebSocket client unregistered: user %d, total clients: %d", client.userID, len(h.clients))
 		case message := <-h.broadcast:
@@ -62,10 +66,19 @@ func (h *Hub) run() {
 				default:
 					close(client.send)
 					delete(h.clients, client)
+					delete(h.userClients, client.userID)
 				}
 			}
 			h.mu.RUnlock()
 		}
+	}
+}
+
+func (h *Hub) unregisterClient(client *Client) {
+	if _, ok := h.clients[client]; ok {
+		delete(h.clients, client)
+		delete(h.userClients, client.userID)
+		close(client.send)
 	}
 }
 

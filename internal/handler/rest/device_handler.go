@@ -33,6 +33,9 @@ func (h *DeviceHandler) Create(c *gin.Context) {
 	}
 	device.UserID = userID.(int)
 
+	// Set default status - always offline until device connects
+	device.Status = domain.DeviceStatusOffline
+
 	if err := h.deviceRepo.Create(&device); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

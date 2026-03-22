@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"log"
 	"net/http"
 	"time"
 
@@ -35,8 +36,11 @@ func (h *DataHandler) GetLatest(c *gin.Context) {
 }
 
 func (h *DataHandler) GetHistorical(c *gin.Context) {
-	deviceID := c.Param("deviceId")
+	deviceID := c.Param("id") // Fix #1: Use "id", not "deviceId"
 	sensorType := c.Query("sensor_type")
+
+	log.Printf("GetHistorical called: device=%s, type=%s", deviceID, sensorType)
+
 	if sensorType == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "sensor_type is required"})
 		return
@@ -56,7 +60,7 @@ func (h *DataHandler) GetHistorical(c *gin.Context) {
 			return
 		}
 	} else {
-		start = time.Now().Add(-24 * time.Hour) // Default: last 24h
+		start = time.Now().Add(-24 * time.Hour)
 	}
 
 	if endStr != "" {
@@ -70,11 +74,15 @@ func (h *DataHandler) GetHistorical(c *gin.Context) {
 	}
 
 	data, err := h.dataService.GetHistoricalData(deviceID, sensorType, start, end)
+
+	// Fix #2: Handle nil error
 	if err != nil {
+		log.Printf("Query error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	log.Printf("Query result: %d records", len(data))
 	c.JSON(http.StatusOK, data)
 }
 

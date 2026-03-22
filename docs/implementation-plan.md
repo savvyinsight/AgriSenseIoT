@@ -150,13 +150,13 @@ Device → EMQX → MQTT Handler → Data Service → Redis (latest)
   - Register
   - Login
   - Token validation middleware
-- [ ] Create REST handlers (`internal/handler/rest/`)
+- [x] Create REST handlers (`internal/handler/rest/`)
   - `auth_handler.go` - Login/register endpoints
   - `device_handler.go` - CRUD for devices
   - `data_handler.go` - Query sensor data
   - `alert_handler.go` - CRUD for alert rules
   - `control_handler.go` - Send commands
-- [ ] Implement WebSocket handler (`internal/handler/websocket/`)
+- [x] Implement WebSocket handler (`internal/handler/websocket/`)
   - Connection upgrade
   - Authentication
   - Subscribe to device updates

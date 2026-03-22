@@ -177,7 +177,7 @@ func main() {
 		data := api.Group("/devices/:id/data") // Change from :deviceId to :id
 		{
 			data.GET("/latest", dataHandler.GetLatest)         // Now /devices/:id/data/latest
-			data.GET("/", dataHandler.GetHistorical)           // Now /devices/:id/data/
+			data.GET("", dataHandler.GetHistorical)            // Now /devices/:id/data
 			data.GET("/aggregated", dataHandler.GetAggregated) // Now /devices/:id/data/aggregated
 		}
 

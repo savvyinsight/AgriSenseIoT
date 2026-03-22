@@ -59,6 +59,7 @@ func (h *Hub) run() {
 			h.mu.Unlock()
 			log.Printf("WebSocket client unregistered: user %d, total clients: %d", client.userID, len(h.clients))
 		case message := <-h.broadcast:
+			log.Printf("Hub broadcasting to %d clients", len(h.clients))
 			h.mu.RLock()
 			for client := range h.clients {
 				select {

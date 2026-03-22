@@ -31,6 +31,7 @@ func NewHander(authService *auth.Service) *Handler {
 }
 
 func (h *Handler) HandleWebSocket(c *gin.Context) {
+	log.Println("HandleWebSocket called!")
 	token := c.Query("token")
 	if token == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "token required"})
@@ -68,10 +69,12 @@ func (h *Handler) HandleWebSocket(c *gin.Context) {
 
 func (h *Handler) readPump(client *Client) {
 	defer func() {
+		log.Printf("readPump exiting for user %d", client.userID)
 		h.hub.unregister <- client
 		client.conn.Close()
 	}()
 
+	// Set readline to prevent hanging
 	client.conn.SetReadLimit(512)
 	client.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 	client.conn.SetPongHandler(func(string) error {
@@ -79,9 +82,11 @@ func (h *Handler) readPump(client *Client) {
 		return nil
 	})
 
+	// Block forever reading messages
 	for {
 		_, message, err := client.conn.ReadMessage()
 		if err != nil {
+			log.Printf("readPump error for user %d: %v", client.userID, err)
 			break
 		}
 
@@ -94,6 +99,7 @@ func (h *Handler) writePump(client *Client) {
 	ticker := time.NewTicker(30 * time.Second)
 
 	defer func() {
+		log.Printf("writePump exiting for user %d", client.userID)
 		ticker.Stop()
 		client.conn.Close()
 	}()
@@ -101,6 +107,7 @@ func (h *Handler) writePump(client *Client) {
 	for {
 		select {
 		case message, ok := <-client.send:
+			log.Printf("WritePump sending to user %d: %s", client.userID, string(message))
 			client.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 			if !ok {
 				client.conn.WriteMessage(websocket.CloseMessage, []byte{})

@@ -144,6 +144,13 @@ func main() {
 	}))
 
 	r.GET("/ws", wsHander.HandleWebSocket)
+	r.POST("/internal/broadcast", func(c *gin.Context) {
+		var msg map[string]interface{}
+		c.BindJSON(&msg)
+		wsHub := websocket.GetHub()
+		wsHub.BroadcastAll(msg)
+		c.Status(200)
+	})
 
 	// Public routes
 	authGroup := r.Group("/api/v1/auth")

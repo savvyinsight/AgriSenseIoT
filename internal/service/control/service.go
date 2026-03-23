@@ -121,3 +121,51 @@ func (s *Service) HandleCommandResponse(deviceID string, payload []byte) {
 func (s *Service) SetPublishFunc(fn func(deviceID string, payload []byte) error) {
 	s.publishFunc = fn
 }
+
+// ExecuteCommand executes a command (used by automation service)
+func (s *Service) ExecuteCommand(deviceID int, command string, parameters map[string]interface{}, userID *int) (*domain.Command, error) {
+	// Get device to verify it exists and get its external ID
+	device, err := s.deviceRepo.GetByID(deviceID)
+	if err != nil {
+		return nil, fmt.Errorf("device not found: %w", err)
+	}
+
+	// Create command record
+	cmd := &domain.Command{
+		DeviceID:   deviceID,
+		Command:    command,
+		Parameters: parameters,
+		Status:     domain.CommandStatusPending,
+		UserID:     userID,
+		CreatedAt:  time.Now(),
+	}
+
+	if err := s.cmdRepo.Create(cmd); err != nil {
+		return nil, fmt.Errorf("failed to create command: %w", err)
+	}
+
+	// Send via MQTT (async)
+	go func() {
+		payload := map[string]interface{}{
+			"command_id": cmd.ID,
+			"command":    command,
+			"parameters": parameters,
+			"timestamp":  time.Now(),
+		}
+
+		data, _ := json.Marshal(payload)
+
+		// Use injected publish function
+		if err := s.publishFunc(device.DeviceID, data); err != nil {
+			log.Printf("Failed to publish command %d: %v", cmd.ID, err)
+			s.cmdRepo.UpdateStatus(cmd.ID, domain.CommandStatusFailed)
+			return
+		}
+
+		// Update status to sent
+		now := time.Now()
+		s.cmdRepo.UpdateDelivery(cmd.ID, &now, nil, nil)
+	}()
+
+	return cmd, nil
+}

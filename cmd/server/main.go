@@ -19,6 +19,7 @@ import (
 	"github.com/savvyinsight/agrisenseiot/internal/ruleengine"
 	"github.com/savvyinsight/agrisenseiot/internal/service/alert"
 	"github.com/savvyinsight/agrisenseiot/internal/service/auth"
+	"github.com/savvyinsight/agrisenseiot/internal/service/automation"
 	"github.com/savvyinsight/agrisenseiot/internal/service/control"
 	"github.com/savvyinsight/agrisenseiot/internal/service/data"
 )
@@ -125,12 +126,25 @@ func main() {
 		deviceRepo,
 	)
 
+	// 6. Create automation service
+	automationService := automation.NewService(
+		&postgres.AutomationRuleRepository{DB: pgDB},
+		deviceRepo,
+		controlService, // controlService implements CommandExecutor
+	)
+	automationService.Start()
+	defer automationService.Stop()
+
+	// Set automation service in data service
+	dataService.SetAutomationService(automationService)
+
 	// Create handlers
 	authHandler := rest.NewAuthHandler(authService)
 	deviceHandler := rest.NewDeviceHandler(deviceRepo)
 	dataHandler := rest.NewDataHandler(dataService)
 	alertHandler := rest.NewAlertHandler(alertService)
 	controlHandler := rest.NewControlHandler(controlService)
+	automationHandler := rest.NewAutomationHandler(automationService)
 
 	// Setup Gin router
 	r := gin.Default()
@@ -192,6 +206,16 @@ func main() {
 			alerts.PUT("/rules/:id", alertHandler.UpdateRule)
 			alerts.DELETE("/rules/:id", alertHandler.DeleteRule)
 			alerts.POST("/:id/acknowledge", alertHandler.AcknowledgeAlert)
+		}
+
+		// Automation routes
+		automation := api.Group("/automation")
+		{
+			automation.POST("/rules", automationHandler.CreateRule)
+			automation.GET("/rules", automationHandler.ListRules)
+			automation.GET("/rules/:id", automationHandler.GetRule)
+			automation.PUT("/rules/:id", automationHandler.UpdateRule)
+			automation.DELETE("/rules/:id", automationHandler.DeleteRule)
 		}
 
 		// Control routes

@@ -89,8 +89,8 @@ func main() {
 		ruleEngine,
 	)
 
-	// initialize mqtt with data service
-	handlers.Init(dataService)
+	// initialize mqtt with data service and device repository for status management
+	handlers.Init(dataService, deviceRepo)
 
 	// Create control service FIRST (before MQTT)
 	controlService := control.NewService(

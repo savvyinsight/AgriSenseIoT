@@ -3,20 +3,35 @@ package handlers
 import (
 	"log"
 
+	"github.com/savvyinsight/agrisenseiot/internal/domain"
 	"github.com/savvyinsight/agrisenseiot/internal/service/data"
 )
 
-var dataService *data.Service
+var (
+	dataService *data.Service
+	deviceRepo  domain.DeviceRepository
+)
 
-// Init sets the data service for handlers
-func Init(ds *data.Service) {
+// Init sets the data service and device repository for handlers
+func Init(ds *data.Service, dr domain.DeviceRepository) {
 	dataService = ds
+	deviceRepo = dr
 }
 
 func HandleTelemetry(deviceID string, payload []byte) {
 	if dataService == nil {
 		log.Println("ERROR: Data service not initialized")
 		return
+	}
+
+	// Mark device as online when telemetry is received
+	if deviceRepo != nil {
+		if err := deviceRepo.UpdateStatus(deviceID, domain.DeviceStatusOnline); err != nil {
+			log.Printf("Failed to update device status to online for %s: %v", deviceID, err)
+		}
+		if err := deviceRepo.UpdateHeartbeat(deviceID); err != nil {
+			log.Printf("Failed to update heartbeat for device %s: %v", deviceID, err)
+		}
 	}
 
 	if err := dataService.ProcessTelemetry(deviceID, payload); err != nil {

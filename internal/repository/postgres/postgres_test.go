@@ -60,6 +60,8 @@ func setupPostgresContainer(t *testing.T) (*sql.DB, func()) {
         name VARCHAR(100) NOT NULL,
         type VARCHAR(20),
         location VARCHAR(255),
+        latitude DOUBLE PRECISION,
+        longitude DOUBLE PRECISION,
         status VARCHAR(20) DEFAULT 'offline',
         last_heartbeat TIMESTAMP,
         firmware_version VARCHAR(20),
@@ -242,14 +244,19 @@ func TestDeviceRepository(t *testing.T) {
 
 	// Create
 	location := "Test Location"
+	lat := 12.3456
+	lon := 65.4321
 	device := &domain.Device{
-		DeviceID: "test-device-001",
-		Name:     "Test Device",
-		Type:     domain.DeviceTypeSensor,
-		Location: &location,
-		Status:   domain.DeviceStatusOffline,
-		Config:   map[string]interface{}{"interval": 30},
-		UserID:   user.ID,
+		DeviceID:        "test-device-001",
+		Name:            "Test Device",
+		Type:            domain.DeviceTypeSensor,
+		Location:        &location,
+		Latitude:        &lat,
+		Longitude:       &lon,
+		Status:          domain.DeviceStatusOffline,
+		FirmwareVersion: ptrString("1.0.0"),
+		Config:          map[string]interface{}{"interval": 30},
+		UserID:          user.ID,
 	}
 
 	err = repo.Create(device)
@@ -268,6 +275,21 @@ func TestDeviceRepository(t *testing.T) {
 	if found.DeviceID != device.DeviceID {
 		t.Errorf("Expected DeviceID %s, got %s", device.DeviceID, found.DeviceID)
 	}
+	if found.Location == nil || *found.Location != location {
+		t.Errorf("Expected Location %s, got %v", location, found.Location)
+	}
+	if found.Latitude == nil || *found.Latitude != lat {
+		t.Errorf("Expected Latitude %v, got %v", lat, found.Latitude)
+	}
+	if found.Longitude == nil || *found.Longitude != lon {
+		t.Errorf("Expected Longitude %v, got %v", lon, found.Longitude)
+	}
+	if found.FirmwareVersion == nil || *found.FirmwareVersion != "1.0.0" {
+		t.Errorf("Expected FirmwareVersion 1.0.0, got %v", found.FirmwareVersion)
+	}
+	if found.Config == nil || found.Config["interval"] != float64(30) {
+		t.Errorf("Expected Config interval 30, got %v", found.Config)
+	}
 
 	// GetByDeviceID
 	found, err = repo.GetByDeviceID(device.DeviceID)
@@ -280,9 +302,35 @@ func TestDeviceRepository(t *testing.T) {
 
 	// Update
 	device.Name = "Updated Device"
+	updatedLat := 98.7654
+	updatedLon := 54.321
+	device.Latitude = &updatedLat
+	device.Longitude = &updatedLon
+	device.FirmwareVersion = ptrString("1.0.1")
+	device.Config = map[string]interface{}{"interval": 60}
 	err = repo.Update(device)
 	if err != nil {
 		t.Fatalf("Failed to update device: %v", err)
+	}
+
+	updated, err := repo.GetByID(device.ID)
+	if err != nil {
+		t.Fatalf("Failed to get updated device by ID: %v", err)
+	}
+	if updated.Name != "Updated Device" {
+		t.Errorf("Expected updated name, got %s", updated.Name)
+	}
+	if updated.Latitude == nil || *updated.Latitude != updatedLat {
+		t.Errorf("Expected updated latitude %v, got %v", updatedLat, updated.Latitude)
+	}
+	if updated.Longitude == nil || *updated.Longitude != updatedLon {
+		t.Errorf("Expected updated longitude %v, got %v", updatedLon, updated.Longitude)
+	}
+	if updated.FirmwareVersion == nil || *updated.FirmwareVersion != "1.0.1" {
+		t.Errorf("Expected updated firmware 1.0.1, got %v", updated.FirmwareVersion)
+	}
+	if updated.Config == nil || updated.Config["interval"] != float64(60) {
+		t.Errorf("Expected updated config interval 60, got %v", updated.Config)
 	}
 
 	// UpdateHeartbeat
@@ -430,6 +478,10 @@ func TestAlertRuleRepository(t *testing.T) {
 	if err == nil {
 		t.Error("Expected error when getting deleted rule, got nil")
 	}
+}
+
+func ptrString(s string) *string {
+	return &s
 }
 
 func ptrFloat64(f float64) *float64 {

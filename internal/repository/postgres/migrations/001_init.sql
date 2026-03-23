@@ -19,6 +19,8 @@ CREATE TABLE devices (
     name VARCHAR(100) NOT NULL,
     type VARCHAR(20) CHECK (type IN ('sensor', 'controller', 'both')),
     location VARCHAR(255),
+    latitude DOUBLE PRECISION,
+    longitude DOUBLE PRECISION,
     status VARCHAR(20) DEFAULT 'offline' CHECK (status IN ('online', 'offline')),
     last_heartbeat TIMESTAMP,
     firmware_version VARCHAR(20),

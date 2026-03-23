@@ -15,8 +15,8 @@ type DeviceRepository struct {
 
 func (r *DeviceRepository) Create(device *domain.Device) error {
 	query := `
-        INSERT INTO devices (device_id, name, type, location, status, config, user_id, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        INSERT INTO devices (device_id, name, type, location, latitude, longitude, status, firmware_version, config, user_id, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING id
     `
 
@@ -31,7 +31,10 @@ func (r *DeviceRepository) Create(device *domain.Device) error {
 		device.Name,
 		device.Type,
 		device.Location,
+		device.Latitude,
+		device.Longitude,
 		device.Status,
+		device.FirmwareVersion,
 		configJSON,
 		device.UserID,
 		time.Now(),
@@ -43,13 +46,15 @@ func (r *DeviceRepository) Create(device *domain.Device) error {
 
 func (r *DeviceRepository) GetByID(id int) (*domain.Device, error) {
 	query := `
-        SELECT id, device_id, name, type, location, status, last_heartbeat, 
+        SELECT id, device_id, name, type, location, latitude, longitude, status, last_heartbeat, 
                firmware_version, config, user_id, created_at, updated_at
         FROM devices WHERE id = $1
     `
 
 	var device domain.Device
 	var configJSON []byte
+	var latitude sql.NullFloat64
+	var longitude sql.NullFloat64
 
 	err := r.DB.QueryRow(query, id).Scan(
 		&device.ID,
@@ -57,6 +62,8 @@ func (r *DeviceRepository) GetByID(id int) (*domain.Device, error) {
 		&device.Name,
 		&device.Type,
 		&device.Location,
+		&latitude,
+		&longitude,
 		&device.Status,
 		&device.LastHeartbeat,
 		&device.FirmwareVersion,
@@ -65,6 +72,13 @@ func (r *DeviceRepository) GetByID(id int) (*domain.Device, error) {
 		&device.CreatedAt,
 		&device.UpdatedAt,
 	)
+
+	if latitude.Valid {
+		device.Latitude = &latitude.Float64
+	}
+	if longitude.Valid {
+		device.Longitude = &longitude.Float64
+	}
 
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("device not found")
@@ -82,13 +96,15 @@ func (r *DeviceRepository) GetByID(id int) (*domain.Device, error) {
 
 func (r *DeviceRepository) GetByDeviceID(deviceID string) (*domain.Device, error) {
 	query := `
-        SELECT id, device_id, name, type, location, status, last_heartbeat, 
+        SELECT id, device_id, name, type, location, latitude, longitude, status, last_heartbeat, 
                firmware_version, config, user_id, created_at, updated_at
         FROM devices WHERE device_id = $1
     `
 
 	var device domain.Device
 	var configJSON []byte
+	var latitude sql.NullFloat64
+	var longitude sql.NullFloat64
 
 	err := r.DB.QueryRow(query, deviceID).Scan(
 		&device.ID,
@@ -96,6 +112,8 @@ func (r *DeviceRepository) GetByDeviceID(deviceID string) (*domain.Device, error
 		&device.Name,
 		&device.Type,
 		&device.Location,
+		&latitude,
+		&longitude,
 		&device.Status,
 		&device.LastHeartbeat,
 		&device.FirmwareVersion,
@@ -104,6 +122,13 @@ func (r *DeviceRepository) GetByDeviceID(deviceID string) (*domain.Device, error
 		&device.CreatedAt,
 		&device.UpdatedAt,
 	)
+
+	if latitude.Valid {
+		device.Latitude = &latitude.Float64
+	}
+	if longitude.Valid {
+		device.Longitude = &longitude.Float64
+	}
 
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("device not found")
@@ -121,7 +146,7 @@ func (r *DeviceRepository) GetByDeviceID(deviceID string) (*domain.Device, error
 
 func (r *DeviceRepository) GetByUserID(userID int) ([]domain.Device, error) {
 	query := `
-        SELECT id, device_id, name, type, location, status, last_heartbeat, 
+        SELECT id, device_id, name, type, location, latitude, longitude, status, last_heartbeat, 
                firmware_version, config, user_id, created_at, updated_at
         FROM devices WHERE user_id = $1 ORDER BY id
     `
@@ -136,6 +161,8 @@ func (r *DeviceRepository) GetByUserID(userID int) ([]domain.Device, error) {
 	for rows.Next() {
 		var device domain.Device
 		var configJSON []byte
+		var latitude sql.NullFloat64
+		var longitude sql.NullFloat64
 
 		err := rows.Scan(
 			&device.ID,
@@ -143,6 +170,8 @@ func (r *DeviceRepository) GetByUserID(userID int) ([]domain.Device, error) {
 			&device.Name,
 			&device.Type,
 			&device.Location,
+			&latitude,
+			&longitude,
 			&device.Status,
 			&device.LastHeartbeat,
 			&device.FirmwareVersion,
@@ -151,6 +180,13 @@ func (r *DeviceRepository) GetByUserID(userID int) ([]domain.Device, error) {
 			&device.CreatedAt,
 			&device.UpdatedAt,
 		)
+
+		if latitude.Valid {
+			device.Latitude = &latitude.Float64
+		}
+		if longitude.Valid {
+			device.Longitude = &longitude.Float64
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -167,9 +203,9 @@ func (r *DeviceRepository) GetByUserID(userID int) ([]domain.Device, error) {
 func (r *DeviceRepository) Update(device *domain.Device) error {
 	query := `
         UPDATE devices 
-        SET name = $1, type = $2, location = $3, status = $4, 
-            firmware_version = $5, config = $6, updated_at = $7
-        WHERE id = $8
+        SET name = $1, type = $2, location = $3, latitude = $4, longitude = $5, status = $6, 
+            firmware_version = $7, config = $8, updated_at = $9
+        WHERE id = $10
     `
 
 	configJSON, err := json.Marshal(device.Config)
@@ -182,6 +218,8 @@ func (r *DeviceRepository) Update(device *domain.Device) error {
 		device.Name,
 		device.Type,
 		device.Location,
+		device.Latitude,
+		device.Longitude,
 		device.Status,
 		device.FirmwareVersion,
 		configJSON,
@@ -206,8 +244,8 @@ func (r *DeviceRepository) UpdateStatus(deviceID string, status domain.DeviceSta
 
 func (r *DeviceRepository) List(userID int, limit, offset int) ([]domain.Device, int64, error) {
 	query := `
-        SELECT id, device_id, name, type, location, status, last_heartbeat, 
-               firmware_version, user_id, created_at, updated_at
+        SELECT id, device_id, name, type, location, latitude, longitude, status, last_heartbeat, 
+               firmware_version, config, user_id, created_at, updated_at
         FROM devices 
         WHERE user_id = $1 OR $1 = 0
         ORDER BY id 
@@ -223,21 +261,37 @@ func (r *DeviceRepository) List(userID int, limit, offset int) ([]domain.Device,
 	var devices []domain.Device
 	for rows.Next() {
 		var device domain.Device
+		var configJSON []byte
+		var latitude sql.NullFloat64
+		var longitude sql.NullFloat64
 		err := rows.Scan(
 			&device.ID,
 			&device.DeviceID,
 			&device.Name,
 			&device.Type,
 			&device.Location,
+			&latitude,
+			&longitude,
 			&device.Status,
 			&device.LastHeartbeat,
 			&device.FirmwareVersion,
+			&configJSON,
 			&device.UserID,
 			&device.CreatedAt,
 			&device.UpdatedAt,
 		)
+
+		if latitude.Valid {
+			device.Latitude = &latitude.Float64
+		}
+		if longitude.Valid {
+			device.Longitude = &longitude.Float64
+		}
 		if err != nil {
 			return nil, 0, err
+		}
+		if len(configJSON) > 0 {
+			json.Unmarshal(configJSON, &device.Config)
 		}
 		devices = append(devices, device)
 	}

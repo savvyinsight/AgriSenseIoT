@@ -147,6 +147,21 @@ func (h *AlertHandler) AcknowledgeAlert(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "acknowledged"})
 }
 
+func (h *AlertHandler) ResolveAlert(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid alert id"})
+		return
+	}
+
+	if err := h.alertService.ResolveAlert(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "resolved"})
+}
+
 func (h *AlertHandler) GetAlertHistory(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))

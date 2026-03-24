@@ -206,6 +206,7 @@ func main() {
 			alerts.PUT("/rules/:id", alertHandler.UpdateRule)
 			alerts.DELETE("/rules/:id", alertHandler.DeleteRule)
 			alerts.POST("/:id/acknowledge", alertHandler.AcknowledgeAlert)
+			alerts.POST("/:id/resolve", alertHandler.ResolveAlert)
 		}
 
 		// Automation routes

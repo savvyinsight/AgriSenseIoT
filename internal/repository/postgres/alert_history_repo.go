@@ -51,7 +51,7 @@ func (r *AlertRepository) GetActive() ([]domain.Alert, error) {
         SELECT id, rule_id, device_id, sensor_value, message, severity, 
                status, triggered_at, acknowledged_at, resolved_at, metadata
         FROM alerts 
-        WHERE status IN ('triggered', 'acknowledged')
+        WHERE status IN ('triggered')
         ORDER BY triggered_at DESC
     `
 

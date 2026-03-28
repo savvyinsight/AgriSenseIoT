@@ -1,52 +1,10 @@
 # High-Level Architecture
 
 ## System Context Diagram
-┌─────────────────┐ ┌─────────────────────────────────────┐ ┌─────────────────┐
-│ │ │ │ │ │
-│ IoT Devices │────▶│ AgriSenseIoT Platform │────▶│ Web Users │
-│ (Sensors) │ │ │ │ (Farmers) │
-│ │◀────│ │◀────│ │
-└─────────────────┘ └─────────────────────────────────────┘ └─────────────────┘
-│ │
-▼ ▼
-┌─────────────────┐ ┌─────────────────┐
-│ Analytics │ │ Mobile App │
-│ (Future) │ │ (Future) │
-└─────────────────┘ └─────────────────┘
+![System Context](image/Context Diagram.png)
 
 ## Layered Architecture
-┌─────────────────────────────────────────────────────────────┐
-│ APPLICATION LAYER │
-│ ┌─────────────────┐ ┌─────────────────┐ │
-│ │ Web Dashboard │ │ REST API │ │
-│ │ (Vue/React) │ │ (Port 8080) │ │
-│ └─────────────────┘ └─────────────────┘ │
-├─────────────────────────────────────────────────────────────┤
-│ SERVICE LAYER │
-│ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐│
-│ │ Device Service │ │ Alert Service │ │ Control Service ││
-│ ├─────────────────┼───────────────────┼───────────────────┤│
-│ │ Data Service │ │ User Service │ │ Rule Engine ││
-│ └─────────────────┘ └─────────────────┘ └─────────────────┘│
-├─────────────────────────────────────────────────────────────┤
-│ PROCESSING LAYER │
-│ ┌─────────────────────────────────────────────────────┐ │
-│ │ MQTT Broker (EMQX) │ │
-│ │ Message Handling & Routing │ │
-│ └─────────────────────────────────────────────────────┘ │
-│ ┌─────────────────────────────────────────────────────┐ │
-│ │ Real-time Stream Processor │ │
-│ │ (Redis + Go Workers) │ │
-│ └─────────────────────────────────────────────────────┘ │
-├─────────────────────────────────────────────────────────────┤
-│ DATA LAYER │
-│ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐│
-│ │ MySQL │ │ InfluxDB │ │ Redis ││
-│ │ (Relational) │ │ (Time-series) │ │ (Cache) ││
-│ │ Users/Devices │ │ Sensor History │ │ Latest/Stream ││
-│ │ Rules/Alerts │ │ │ │ ││
-│ └─────────────────┘ └─────────────────┘ └─────────────────┘│
-└─────────────────────────────────────────────────────────────┘
+![Layer Architecture](image/Layer Architecture.png)
 
 ## Component Details
 
@@ -90,32 +48,14 @@
 ## Data Flow
 
 ### 1. Device Data Ingestion Flow
-Device → MQTT Broker → Data Service → Validation
-↓
-┌───────────┴───────────┐
-↓ ↓
-Redis (latest) InfluxDB (history)
-↓
-WebSocket → Dashboard
+![Device Data Ingestion Flow](image/Device Data Flow.png)
 
 ### 2. Alert Processing Flow
-Device Data → Redis Stream → Rule Engine → Match Rules?
-↓
-┌─────┴─────┐
-↓ ↓
-Yes No (discard)
-↓
-Create Alert
-↓
-┌───────────┴───────────┐
-↓ ↓
-MySQL (store) Notify User
-(Email/WebSocket)
+![Alert Process Flow](image/Alert Data Flow.png)
 
 ### 3. Control Flow
-User Action → API → Control Service → MQTT Broker → Device
-↑ ↓
-└───────── Status Update ─────────────────┘
+![Control Flow](image/Control Flow.png)
+
 ## Technology Stack Summary
 
 | Layer | Technology | Justification |
@@ -130,15 +70,7 @@ User Action → API → Control Service → MQTT Broker → Device
 | API | REST + WebSocket | Real-time updates |
 
 ## Deployment Architecture (Initial)
-┌─────────────────────────────────────┐
-│ Single Server │
-│ ┌───────────────────────────────┐ │
-│ │ Docker Host │ │
-│ │ ┌─────┐ ┌─────┐ ┌─────┐ │ │
-│ │ │ API │ │EMQX │ │ DBs │ │ │
-│ │ └─────┘ └─────┘ └─────┘ │ │
-│ └───────────────────────────────┘ │
-└─────────────────────────────────────┘
+![Deployment Architecture](image/Deployment Architecture.png)
 
 ## Future Scalability
 - Split services into separate containers

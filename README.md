@@ -23,22 +23,12 @@ AgriSenseIoT is a production-ready IoT platform that enables real-time monitorin
 
 ## 🏗 Architecture
 
-![Architecture Diagram](docs/architecture.png)
-┌─────────────┐ ┌──────────────┐ ┌─────────────┐
-│ Devices │────▶│ EMQX │────▶│ Go Backend │
-│ (MQTT) │◀────│ MQTT Broker │◀────│ Services │
-└─────────────┘ └──────────────┘ └──────┬──────┘
-│
-┌─────────────────────────────┼────┐
-▼ ▼ ▼ ▼
-┌──────────┐ ┌──────────┐ ┌──────────┐
-│PostgreSQL│ │ InfluxDB │ │ Redis │
-│(relational│ │(time- │ │ (cache) │
-│ data) │ │ series) │ │ │
-└──────────┘ └──────────┘ └──────────┘
+![Architecture Diagram](docs/image/Layer Architecture.png)
+
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Docker & Docker Compose
 - Go 1.21+ (for development)
 - Make
@@ -102,21 +92,25 @@ Full API documentation is available in docs/api.md
 | GET  | `/api/v1/alerts/active` | Get active alerts |
 | POST | `/api/v1/devices/:id/commands` | Send command to device |
 🧪 Testing
+
 # Run all tests
+
 go test ./... -v
 
 # Run load tests (requires k6)
+
 k6 run test/load/k6-script.js
 
 # Check test coverage
+
 go test ./... -coverprofile=coverage.out
 go tool cover -html=coverage.out
 📊 Monitoring
-Metrics: http://localhost:8080/metrics (Prometheus format)
+Metrics: <http://localhost:8080/metrics> (Prometheus format)
 
-Profiling: http://localhost:8080/debug/pprof/
+Profiling: <http://localhost:8080/debug/pprof/>
 
-EMQX Dashboard: http://localhost:18083 (admin/public)
+EMQX Dashboard: <http://localhost:18083> (admin/public)
 🚢 Production Deployment
 See DEPLOYMENT.md for production setup instructions.
 

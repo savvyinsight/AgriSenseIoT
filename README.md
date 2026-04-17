@@ -138,13 +138,15 @@ Prometheus - Metrics collection
 
 📈 Performance
 
-Handles 2,300+ requests/second
+Handles 2,300+ requests/second ✅ **ACHIEVED**
 
-Supports 1000+ concurrent device connections
+**Validation Results:**
+- Actual throughput: 2,305 messages/second
+- P95 latency: < 6ms
+- Error rate: 0%
+- Tested with 100 concurrent devices
 
-Alert latency < 2 seconds
-
-p95 API response < 650ms
+See [Performance Results](docs/PERFORMANCE-RESULTS.md) for detailed optimization analysis.
 
 📝 License
 

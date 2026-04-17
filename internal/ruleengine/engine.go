@@ -87,15 +87,22 @@ func (e *Engine) Evaluate(data *domain.SensorData) {
 	e.rulesMutex.RLock()
 	defer e.rulesMutex.RUnlock()
 
+	// Get device to check its ID
+	device, err := e.deviceRepo.GetByDeviceID(data.DeviceID)
+	if err != nil {
+		log.Printf("Device %s not found, skipping rule evaluation", data.DeviceID)
+		return
+	}
+
 	for _, rule := range e.rules {
-		// Skip if rule is for a different device (unless rule applies to all devices)
+		// Check if rule applies to this device
 		if rule.DeviceID != nil && *rule.DeviceID != 0 {
-			// Need to map device_id string to device ID - this requires deviceRepo
-			// For now, we'll handle this in the evaluator with more context
-			continue
+			if *rule.DeviceID != device.ID {
+				continue // Rule is for a different device
+			}
 		}
 
-		// Skip if rule is for different sensor type
+		// Check sensor type
 		if rule.SensorTypeID != e.getSensorTypeID(data.SensorType) {
 			continue
 		}

@@ -96,6 +96,63 @@ func (r *AlertRepository) GetActive() ([]domain.Alert, error) {
 	return alerts, nil
 }
 
+func (r *AlertRepository) GetActivePaginated(limit, offset int) ([]domain.Alert, int64, error) {
+	query := `
+        SELECT id, rule_id, device_id, sensor_value, message, severity, 
+               status, triggered_at, acknowledged_at, resolved_at, metadata
+        FROM alerts 
+        WHERE status IN ('triggered')
+        ORDER BY triggered_at DESC
+        LIMIT $1 OFFSET $2
+    `
+
+	rows, err := r.DB.Query(query, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var alerts []domain.Alert
+	for rows.Next() {
+		var alert domain.Alert
+		var metadataJSON []byte
+		// ... scan into metadataJSON ...
+		err := rows.Scan(
+			&alert.ID,
+			&alert.RuleID,
+			&alert.DeviceID,
+			&alert.SensorValue,
+			&alert.Message,
+			&alert.Severity,
+			&alert.Status,
+			&alert.TriggeredAt,
+			&alert.AcknowledgedAt,
+			&alert.ResolvedAt,
+			&metadataJSON, // Scan as []byte, not map
+		)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		// Unmarshal JSON into map
+		if len(metadataJSON) > 0 {
+			if err := json.Unmarshal(metadataJSON, &alert.Metadata); err != nil {
+				return nil, 0, fmt.Errorf("failed to unmarshal metadata: %w", err)
+			}
+		}
+
+		alerts = append(alerts, alert)
+	}
+
+	var total int64
+	err = r.DB.QueryRow(`SELECT COUNT(*) FROM alerts WHERE status IN ('triggered')`).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return alerts, total, nil
+}
+
 func (r *AlertRepository) GetByDeviceID(deviceID int) ([]domain.Alert, error) {
 	query := `
         SELECT id, rule_id, device_id, sensor_value, message, severity, 

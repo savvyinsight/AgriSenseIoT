@@ -46,6 +46,11 @@ func (s *Service) GetActiveAlerts() ([]domain.Alert, error) {
 	return s.alertRepo.GetActive()
 }
 
+func (s *Service) GetActiveAlertsPaginated(page, limit int) ([]domain.Alert, int64, error) {
+	offset := (page - 1) * limit
+	return s.alertRepo.GetActivePaginated(limit, offset)
+}
+
 func (s *Service) GetAlertsByDevice(deviceID int) ([]domain.Alert, error) {
 	return s.alertRepo.GetByDeviceID(deviceID)
 }

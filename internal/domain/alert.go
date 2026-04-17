@@ -68,6 +68,7 @@ type AlertRuleRepository interface {
 type AlertRepository interface {
 	Create(alert *Alert) error
 	GetActive() ([]Alert, error)
+	GetActivePaginated(limit, offset int) ([]Alert, int64, error)
 	GetByDeviceID(deviceID int) ([]Alert, error)
 	GetByRuleID(ruleID int) ([]Alert, error)
 	Acknowledge(id int) error

@@ -107,13 +107,21 @@ func (h *AlertHandler) DeleteRule(c *gin.Context) {
 // Alert endpoints
 
 func (h *AlertHandler) GetActiveAlerts(c *gin.Context) {
-	alerts, err := h.alertService.GetActiveAlerts()
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+
+	alerts, total, err := h.alertService.GetActiveAlertsPaginated(page, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"alerts": alerts})
+	c.JSON(http.StatusOK, gin.H{
+		"alerts": alerts,
+		"total":  total,
+		"page":   page,
+		"limit":  limit,
+	})
 }
 
 func (h *AlertHandler) GetAlertsByDevice(c *gin.Context) {

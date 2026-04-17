@@ -3,6 +3,7 @@ package rest
 import (
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -84,6 +85,36 @@ func (h *DataHandler) GetHistorical(c *gin.Context) {
 
 	log.Printf("Query result: %d records", len(data))
 	c.JSON(http.StatusOK, data)
+}
+
+func (h *DataHandler) GetLatestForMultipleDevices(c *gin.Context) {
+	deviceIDsStr := c.Query("device_ids")
+	if deviceIDsStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "device_ids is required"})
+		return
+	}
+
+	// Parse comma-separated device IDs
+	deviceIDs := strings.Split(deviceIDsStr, ",")
+	if len(deviceIDs) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "device_ids cannot be empty"})
+		return
+	}
+
+	// Trim whitespace from each ID
+	for i, id := range deviceIDs {
+		deviceIDs[i] = strings.TrimSpace(id)
+	}
+
+	sensorType := c.DefaultQuery("sensor_type", "temperature")
+
+	readings, err := h.dataService.GetLatestReadingsForDevices(deviceIDs, sensorType)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"devices": readings})
 }
 
 func (h *DataHandler) GetAggregated(c *gin.Context) {

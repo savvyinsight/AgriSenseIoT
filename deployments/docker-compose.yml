@@ -80,41 +80,41 @@ services:
     networks:
       - agrisense-network
 
-  api:
-    build:
-      context: ..
-      dockerfile: deployments/docker/Dockerfile.api
-    container_name: agrisense-api
-    environment:
-      - ENV=development
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=agrisense
-      - DB_SSL_MODE=disable
-      - INFLUXDB_URL=http://influxdb:8086
-      - INFLUXDB_TOKEN=my-token
-      - INFLUXDB_ORG=my-org
-      - INFLUXDB_BUCKET=sensor_data
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_DB=0
-      - MQTT_BROKER=tcp://emqx:1883
-    ports:
-      - "8080:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-      influxdb:
-        condition: service_started
-      emqx:
-        condition: service_started
-    networks:
-      - agrisense-network
-    restart: unless-stopped
+  # api:
+  #   build:
+  #     context: ..
+  #     dockerfile: deployments/docker/Dockerfile.api
+  #   container_name: agrisense-api
+  #   environment:
+  #     - ENV=development
+  #     - DB_HOST=postgres
+  #     - DB_PORT=5432
+  #     - DB_USER=postgres
+  #     - DB_PASSWORD=postgres
+  #     - DB_NAME=agrisense
+  #     - DB_SSL_MODE=disable
+  #     - INFLUXDB_URL=http://influxdb:8086
+  #     - INFLUXDB_TOKEN=my-token
+  #     - INFLUXDB_ORG=my-org
+  #     - INFLUXDB_BUCKET=sensor_data
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - REDIS_DB=0
+  #     - MQTT_BROKER=tcp://emqx:1883
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_started
+  #     influxdb:
+  #       condition: service_started
+  #     emqx:
+  #       condition: service_started
+  #   networks:
+  #     - agrisense-network
+  #   restart: unless-stopped
 
   prometheus:
     image: prom/prometheus:latest

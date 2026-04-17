@@ -18,6 +18,7 @@ import (
 	"github.com/savvyinsight/agrisenseiot/internal/repository/redis"
 	"github.com/savvyinsight/agrisenseiot/internal/ruleengine"
 	"github.com/savvyinsight/agrisenseiot/internal/service/alert"
+	"github.com/savvyinsight/agrisenseiot/internal/service/analytics"
 	"github.com/savvyinsight/agrisenseiot/internal/service/auth"
 	"github.com/savvyinsight/agrisenseiot/internal/service/automation"
 	"github.com/savvyinsight/agrisenseiot/internal/service/control"
@@ -138,6 +139,13 @@ func main() {
 	// Set automation service in data service
 	dataService.SetAutomationService(automationService)
 
+	// 7. Create analytics service
+	analyticsService := analytics.NewService(
+		deviceRepo,
+		sensorTypeRepo,
+		dataService.GetHistoricalData,
+	)
+
 	// Create handlers
 	authHandler := rest.NewAuthHandler(authService)
 	deviceHandler := rest.NewDeviceHandler(deviceRepo)
@@ -145,6 +153,7 @@ func main() {
 	alertHandler := rest.NewAlertHandler(alertService)
 	controlHandler := rest.NewControlHandler(controlService)
 	automationHandler := rest.NewAutomationHandler(automationService)
+	analyticsHandler := rest.NewAnalyticsHandler(analyticsService)
 
 	// Setup Gin router
 	r := gin.Default()
@@ -156,6 +165,7 @@ func main() {
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
+	r.Use(middleware.MetricsMiddleware())
 
 	r.GET("/ws", wsHander.HandleWebSocket)
 	r.POST("/internal/broadcast", func(c *gin.Context) {
@@ -195,6 +205,9 @@ func main() {
 			data.GET("/aggregated", dataHandler.GetAggregated) // Now /devices/:id/data/aggregated
 		}
 
+		// Bulk data routes (for map view, dashboards)
+		api.GET("/devices/data/latest", dataHandler.GetLatestForMultipleDevices) // /api/v1/devices/data/latest?device_ids=1,2,3
+
 		// Alert routes
 		alerts := api.Group("/alerts")
 		{
@@ -217,6 +230,12 @@ func main() {
 			automation.GET("/rules/:id", automationHandler.GetRule)
 			automation.PUT("/rules/:id", automationHandler.UpdateRule)
 			automation.DELETE("/rules/:id", automationHandler.DeleteRule)
+		}
+
+		// Analytics routes
+		analyticsGroup := api.Group("/analytics")
+		{
+			analyticsGroup.GET("/report", analyticsHandler.GetReport)
 		}
 
 		// Control routes

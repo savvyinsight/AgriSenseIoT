@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/savvyinsight/agrisenseiot/internal/domain"
+	"github.com/savvyinsight/agrisenseiot/internal/middleware"
 	"github.com/savvyinsight/agrisenseiot/internal/service/data"
 )
 
@@ -23,6 +24,9 @@ func HandleTelemetry(deviceID string, payload []byte) {
 		log.Println("ERROR: Data service not initialized")
 		return
 	}
+
+	// Record message for metrics
+	middleware.RecordMessage()
 
 	// Mark device as online when telemetry is received
 	if deviceRepo != nil {

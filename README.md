@@ -91,6 +91,8 @@ Full API documentation is available in docs/api.md
 | POST | `/api/v1/alerts/rules` | Create alert rule |
 | GET  | `/api/v1/alerts/active` | Get active alerts |
 | POST | `/api/v1/devices/:id/commands` | Send command to device |
+
+
 🧪 Testing
 
 # Run all tests
@@ -105,12 +107,15 @@ k6 run test/load/k6-script.js
 
 go test ./... -coverprofile=coverage.out
 go tool cover -html=coverage.out
+
 📊 Monitoring
+
 Metrics: <http://localhost:8080/metrics> (Prometheus format)
 
 Profiling: <http://localhost:8080/debug/pprof/>
 
 EMQX Dashboard: <http://localhost:18083> (admin/public)
+
 🚢 Production Deployment
 See DEPLOYMENT.md for production setup instructions.
 
@@ -132,6 +137,7 @@ Docker - Containerization
 Prometheus - Metrics collection
 
 📈 Performance
+
 Handles 2,300+ requests/second
 
 Supports 1000+ concurrent device connections
@@ -141,12 +147,15 @@ Alert latency < 2 seconds
 p95 API response < 650ms
 
 📝 License
+
 MIT License - see LICENSE file
 
 👨‍🌾 Author
-Your Name - @yourusername
+
+Your Richie - @savvyinsight
 
 🙏 Acknowledgments
+
 Thanks to all the open-source projects that made this possible
 
 Inspired by real-world agricultural IoT needs

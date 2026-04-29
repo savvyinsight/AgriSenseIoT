@@ -37,8 +37,12 @@ AgriSenseIoT is a production-ready IoT platform that enables real-time monitorin
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/agrisenseiot.git
+git clone https://github.com/savvyinsight/agrisenseiot.git
 cd agrisenseiot
+
+# Initialize Go module and download dependencies
+go mod init github.com/savvyinsight/agrisenseiot
+go mod tidy
 
 # Copy environment configuration
 cp .env.example .env

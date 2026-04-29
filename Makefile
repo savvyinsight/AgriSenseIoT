@@ -14,8 +14,10 @@ docker-logs:
 
 migrate-up:
 	@echo "Running database migrations..."
-	psql -h $(DB_HOST) -p $(DB_PORT) -U $(DB_USER) -d $(DB_NAME) -f internal/repository/postgres/migrations/001_init.sql
-	psql -h $(DB_HOST) -p $(DB_PORT) -U $(DB_USER) -d $(DB_NAME) -f internal/repository/postgres/migrations/002_add_indexes.sql
+	@echo "Note: Migrations in init/postgres/ auto-run on container startup"
+	@echo "If containers are already running, execute migrations inside container:"
+	docker exec agrisense-postgres psql -U postgres -d agrisense -f /docker-entrypoint-initdb.d/001_init.sql
+	docker exec agrisense-postgres psql -U postgres -d agrisense -f /docker-entrypoint-initdb.d/002_add_indexes.sql
 
 test:
 	go test ./... -v

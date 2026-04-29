@@ -8,8 +8,6 @@
 *.out
 
 # Go specific
-go.sum
-go.mod
 vendor/
 
 # IDE
@@ -18,6 +16,7 @@ vendor/
 *.swp
 *.swo
 *~
+*.iml
 
 # OS generated files
 .DS_Store
@@ -30,27 +29,17 @@ Thumbs.db
 
 # Project specific
 .env
+.env.local
 config/local.yaml
 /data/
-logs/
+/logs/
+/bin/
+/dist/
 
-# Environment
-.env
-.env.local
+# Build outputs from cmd/
+/server
+/mqtt-handler
 
-# Binaries
-bin/
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-
-# Test binary
-*.test
-
-# Output of the go coverage tool
-*.out
-
-# Dependency directories
-vendor/
+# Build outputs
+*.o
+*.a

@@ -17,7 +17,6 @@ migrate-up:
 	@echo "Note: Migrations in init/postgres/ auto-run on container startup"
 	@echo "If containers are already running, execute migrations inside container:"
 	docker exec agrisense-postgres psql -U postgres -d agrisense -f /docker-entrypoint-initdb.d/001_init.sql
-	docker exec agrisense-postgres psql -U postgres -d agrisense -f /docker-entrypoint-initdb.d/002_add_indexes.sql
 
 test:
 	go test ./... -v
